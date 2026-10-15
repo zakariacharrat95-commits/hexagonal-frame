@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Level 1 · The absolute frame — Hexagonal Frame · Z. Charrat</title>
+<style>
+:root{--bg:#F8FAFC;--surface:#FFFFFF;--surface2:#F1F5F9;--text:#0F172A;--muted:#475569;--border:#CBD5E1;--accent:#1F4E99;--accentbg:#E0E9F7;
+  color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#070B18;--surface:#0F172A;--surface2:#111827;--text:#E5E7EB;--muted:#94A3B8;--border:#334155;--accent:#93C5FD;--accentbg:#1E293B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#070B18;--surface:#0F172A;--surface2:#111827;--text:#E5E7EB;--muted:#94A3B8;--border:#334155;--accent:#93C5FD;--accentbg:#1E293B;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Georgia,'Times New Roman',serif;line-height:1.55}
+.wrap{max-width:980px;margin:0 auto;padding:24px 18px 48px}
+header{display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--accent);padding-bottom:12px;margin-bottom:18px}
+header h1{font-size:22px;margin:0;font-weight:600}
+header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.tabs,.lvls{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+button,select{font:inherit;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer}
+button.on{background:var(--accentbg);border-color:var(--accent);color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 10px;font-size:14px;color:var(--muted)}
+canvas{width:100%;display:block;border-radius:10px;background:var(--surface)}
+.fm{display:grid;gap:10px;margin-top:12px}
+.fr{background:var(--surface2);border-radius:10px;padding:10px 14px;overflow-x:auto}
+.fr .k{font-size:13px;color:var(--muted);margin-bottom:4px}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.hidden{display:none}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" id="MathJax-script"></script>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <svg width="44" height="44" viewBox="-1.35 -1.35 2.7 2.7" aria-hidden="true"><polygon points="0,-1 0.866,-0.5 0.866,0.5 0,1 -0.866,0.5 -0.866,-0.5" fill="none" stroke="#1F4E99" stroke-width="0.16"/><polygon points="0,-1 0.866,0.5 -0.866,0.5" fill="none" stroke="#3B82F6" stroke-width="0.12"/><polygon points="0.866,-0.5 0,1 -0.866,-0.5" fill="none" stroke="#E8742A" stroke-width="0.12"/></svg>
+ <div><h1>Level 1 · The absolute frame</h1><p>Zakaria Charrat · ORCID 0009-0009-3714-8416 · companion to “Hexagonal Worlds”</p></div>
+</header>
+<div class="tabs hidden"><button class="tab on" data-t="levels">Four levels</button><button class="tab" data-t="big">Thousands of orbits</button></div>
+
+<section id="levels">
+ <div class="lvls hidden">
+  <button class="lv on" data-l="1">1 · Absolute frame</button><button class="lv" data-l="2">2 · Hexagonal frame</button>
+  <button class="lv" data-l="3">3 · One orbit, two changes</button><button class="lv" data-l="4">4 · Possibilities</button>
+ </div>
+ <canvas id="cv1" style="height:420px"></canvas>
+ <div class="fm" id="fm"></div>
+ <p class="note">Levels 3 and 4 are exact. In level 2 the positions in space are for display only; the frame has no geometry, its coordinates are (orbit, phase). Level 1 is a picture of the tower of frames, not a literal drawing of it.</p>
+</section>
+
+<section id="big" class="hidden">
+ <div class="row">Orbits <input type="range" min="100" max="4000" step="100" value="1500" id="n" style="flex:1;min-width:140px"> <b id="nout">1500</b>
+  <select id="shape"><option value="galaxy">Galaxy</option><option value="sphere">Sphere</option><option value="lattice">Lattice</option></select>
+  <button id="regen">New world</button><button id="play">Pause</button></div>
+ <div class="row"><label><input type="checkbox" id="lk" checked> Links between orbits</label><label><input type="checkbox" id="ax" checked> Axes</label><label>Rotation <input type="range" min="0" max="20" value="6" id="sp" style="width:110px"></label><span id="ph">phase 1</span></div>
+ <canvas id="cv2" style="height:540px;background:#04060D"></canvas>
+ <p class="note">Artistic representation: the axes and the galaxy, sphere or lattice shapes are for display. What is exact: every orbit turns in step under the same change s, and links between orbits keep their pattern when all orbits turn together.</p>
+</section>
+</div>
+<script>
+const LAB=[1,2,4,8,7,5],TEAL='#1D9E75',CORAL='#D85A30',PURP='#7C6FE0';
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function fit(cv){const d=Math.min(2,devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;cv.width=w*d;cv.height=h*d;const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);return[c,w,h];}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+ document.getElementById('levels').classList.toggle('hidden',b.dataset.t!=='levels');document.getElementById('big').classList.toggle('hidden',b.dataset.t!=='big');setTimeout(sizeAll,0);});
+let c1,W1,H1,c2,W2,H2;function sizeAll(){[c1,W1,H1]=fit(document.getElementById('cv1'));[c2,W2,H2]=fit(document.getElementById('cv2'));}sizeAll();addEventListener('resize',sizeAll);
+
+/* ---------- four levels ---------- */
+const F={1:[["Frame of a class of finite worlds","\\(\\mathcal M=\\mathrm{Flim}(\\mathcal K):\\ \\mathrm{Age}(\\mathcal M)=\\mathcal K,\\ \\text{extension property}\\)"],["Every frame is exceeded (Cantor)","\\(|M|<|\\mathcal P(M)|<|\\mathcal P(\\mathcal P(M))|<\\cdots\\)"],["The absolute frame is not an object","\\(\\neg\\,\\exists\\ \\text{a set } V \\text{ containing every frame}\\quad(V \\text{ is a proper class})\\)"]],
+2:[["Points: orbit and phase","\\(x=(i,a)\\in\\mathbb N\\times\\mathbb Z/6,\\qquad a\\mapsto 2^{a}\\bmod 9\\in\\{1,2,4,8,7,5\\}\\)"],["The change, identical everywhere","\\(s(i,a)=(i,a+1),\\qquad s^6=\\mathrm{id},\\qquad s(x)\\neq x\\)"],["The frame: links between orbits","\\(R\\big((i,a),(j,b)\\big)\\iff b-a\\in S_{ij},\\qquad R(x,y)\\iff R(sx,sy)\\)"],["Census and rigidity","\\(f(n)\\sim\\dfrac{8^n\\,64^{\\binom n2}}{6^{\\,n-1}\\,n!},\\qquad \\mathrm{Aut}=\\langle s\\rangle\\ \\text{for almost every world}\\)"]],
+3:[["Multiplicative change: the hexagon turns 60°","\\(\\sigma(x)=2x\\bmod 9:\\ 1\\to2\\to4\\to8\\to7\\to5\\to1\\)"],["Additive change: the two triangles counter-rotate 120°","\\(\\tau(x)=x+3\\bmod 9:\\ (1\\,4\\,7)\\circlearrowright,\\ (2\\,5\\,8)\\circlearrowleft\\)"],["Consecutive primes (Conjecture 1.6, q = 9), data to 10⁹","\\(N(a,b)=N(a+3,b+3):\\ \\ \\text{spread }0.27\\%\\ \\text{under }\\tau,\\ \\ 66.5\\%\\ \\text{under }\\sigma\\)"]],
+4:[["A description respects the change","\\(g:\\mathfrak U_6\\to\\mathbb Z/6,\\qquad g(sx)=g(x)+1\\)"],["One independent coordinate per orbit","\\(\\mathrm{Hom}_s(\\mathfrak U_6,\\mathbb Z/6)\\cong(\\mathbb Z/6)^{\\mathbb N}\\)"],["Change forbids complete self-description (Lawvere)","\\(\\Phi:A\\twoheadrightarrow Y^{A}\\ \\Rightarrow\\ \\forall\\varphi\\ \\exists y:\\ \\varphi(y)=y;\\quad \\delta(j)=j+1 \\text{ has no fixed point}\\)"]]};
+let L=1;function setL(l){L=l;document.querySelectorAll('.lv').forEach(b=>b.classList.toggle('on',+b.dataset.l===l));const fm=document.getElementById('fm');fm.innerHTML='';
+ F[l].forEach(([k,m])=>{const d=document.createElement('div');d.className='fr';d.innerHTML='<div class="k">'+k+'</div><div>'+m+'</div>';fm.appendChild(d);});
+ if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([fm]).catch(()=>{});}
+document.querySelectorAll('.lv').forEach(b=>b.onclick=()=>setL(+b.dataset.l));
+let sd=3;const rr=()=>{sd=(sd*1664525+1013904223)%4294967296;return sd/4294967296;};
+const orb=[];for(let i=0;i<26;i++){const u=rr()*2-1,th=rr()*6.283,r=0.5+0.5*Math.cbrt(rr()),s=Math.sqrt(1-u*u);orb.push([r*s*Math.cos(th),r*u,r*s*Math.sin(th),Math.floor(rr()*8)]);}
+const lk=[];for(let i=0;i<orb.length;i++){const d=orb.map((o,j)=>[j,(o[0]-orb[i][0])**2+(o[1]-orb[i][1])**2+(o[2]-orb[i][2])**2]).filter(a=>a[0]!==i).sort((a,b)=>a[1]-b[1]);const S=[];for(let k=0;k<6;k++)if(rr()<0.5)S.push(k);lk.push([i,d[0][0],S]);}
+const DT=[[],[1],[2],[3],[1,2],[1,3],[2,3],[1,2,3]];const desc=[];for(let r=0;r<5;r++){const v=[];for(let i=0;i<14;i++)v.push(Math.floor(rr()*6));desc.push(v);}
+const hv=(cx,cy,R,k,rot)=>{const a=-Math.PI/2+k*Math.PI/3+(rot||0);return[cx+R*Math.cos(a),cy+R*Math.sin(a)];};
+function T(c,s,x,y,col,size){c.fillStyle=col;c.font=(size||13)+'px Georgia,serif';c.textAlign='center';c.textBaseline='middle';c.fillText(s,x,y);}
+function hex(c,cx,cy,R,ph,col){c.strokeStyle=col;c.lineWidth=1;c.beginPath();for(let k=0;k<=6;k++){const[x,y]=hv(cx,cy,R,k%6);k?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();const[mx,my]=hv(cx,cy,R,ph);c.fillStyle=PURP;c.beginPath();c.arc(mx,my,Math.max(1.5,R*0.22),0,7);c.fill();}
+function drawLevels(t){const c=c1,W=W1,H=H1,g=css('--muted'),p=css('--text');c.clearRect(0,0,W,H);const ph=Math.floor(t/800)%6;
+ if(L===1){const cx=W/2,cy=H/2+6,pu=(t/4000)%1;for(let k=0;k<6;k++){const R=215+k*18+pu*18;c.strokeStyle=g;c.globalAlpha=Math.max(0,0.5-k*0.09-pu*0.08);c.setLineDash([4,5]);c.beginPath();c.ellipse(cx,cy,R*1.45,R*0.78,0,0,7);c.stroke();}c.setLineDash([]);c.globalAlpha=1;
+  [[60,'finite worlds 𝒦'],[105,'𝔘₆ and every countable frame'],[150,'frames of size 2^ℵ₀'],[190,'frames of size 2^(2^ℵ₀)']].forEach(([r,l],k)=>{c.strokeStyle=k===1?PURP:g;c.lineWidth=k===1?2:1;c.beginPath();c.ellipse(cx,cy,r*1.45,r*0.78,0,0,7);c.stroke();T(c,l,cx,cy-r*0.78+12,k===1?PURP:g,12);});
+  for(let k=0;k<7;k++){const a=k*0.9+t/3000;hex(c,cx+Math.cos(a)*42,cy+8+Math.sin(a)*18,7,ph,g);}T(c,'no outer edge: the absolute frame is a proper class, not an object',cx,H-14,p,13);}
+ if(L===2){const yw=t/6000,P=orb.map(o=>{const co=Math.cos(yw),si=Math.sin(yw);let x=o[0]*co+o[2]*si,z=-o[0]*si+o[2]*co,y=o[1]*0.94-z*0.34;z=o[1]*0.34+z*0.94;const f=2.6/(2.6+z),sc=Math.min(W,H)*0.43;return[W/2+x*sc*f,H/2+y*sc*f,f,z];});
+  c.strokeStyle=CORAL;lk.forEach(([i,j,S])=>{const a=P[i],b=P[j];c.globalAlpha=0.3+0.4*Math.min(a[2],b[2]);S.forEach(k=>{const[x1,y1]=hv(a[0],a[1],14*a[2],ph),[x2,y2]=hv(b[0],b[1],14*b[2],(ph+k)%6);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();});});c.globalAlpha=1;
+  P.map((q,i)=>[i,q[3]]).sort((a,b)=>b[1]-a[1]).forEach(([i])=>{const q=P[i],R=14*q[2];c.globalAlpha=0.5+0.5*q[2];c.strokeStyle=TEAL;c.lineWidth=1.4;DT[orb[i][3]].forEach(d=>{for(let k=0;k<(d===3?3:6);k++){const[x1,y1]=hv(q[0],q[1],R,k),[x2,y2]=hv(q[0],q[1],R,(k+d)%6);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}});hex(c,q[0],q[1],R,ph,g);c.globalAlpha=1;});
+  T(c,'phase now: '+LAB[ph]+'   (the same in every orbit)',W/2,H-12,p,13);}
+ if(L===3){const half=Math.floor(t/5000)%2,pr=Math.min(1,(t%5000)/1800),e=pr<0.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2,cx=W/2,cy=H/2-6,R=Math.min(W,H)*0.34;
+  c.strokeStyle=g;c.setLineDash([4,4]);c.beginPath();for(let k=0;k<=6;k++){const[x,y]=hv(cx,cy,R,k%6);k?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();c.setLineDash([]);
+  for(let k=0;k<6;k++){const v=LAB[k],qr=v%3===1,rot=half===0?e*Math.PI/3:(qr?1:-1)*e*2*Math.PI/3,[x,y]=hv(cx,cy,R,k,rot);c.fillStyle=css('--surface');c.strokeStyle=qr?TEAL:CORAL;c.lineWidth=2;c.beginPath();c.arc(x,y,16,0,7);c.fill();c.stroke();T(c,String(v),x,y,p,14);}
+  T(c,half===0?'σ: x → 2x, the whole hexagon turns 60°':'τ: x → x+3, the two triangles turn 120° in opposite directions',cx,H-34,p,13);
+  T(c,half===0?'consecutive primes break this symmetry (66.5%)':'consecutive primes keep this symmetry (0.27%)',cx,H-14,half===0?CORAL:TEAL,13);}
+ if(L===4){const n=14,x0=40,x1=W-30,top=40,bot=H-60;for(let i=0;i<n;i++){const x=x0+i*(x1-x0)/(n-1);c.strokeStyle=g;c.lineWidth=1;c.beginPath();c.moveTo(x,top);c.lineTo(x,bot);c.stroke();for(let k=0;k<6;k++){c.fillStyle=g;c.beginPath();c.arc(x,top+k*(bot-top)/5,2.2,0,7);c.fill();}T(c,'O'+(i+1),x,bot+16,g,11);}
+  for(let k=0;k<6;k++)T(c,String(LAB[k]),x0-22,top+k*(bot-top)/5,g,11);const cyc=Math.floor(t/1500);
+  desc.forEach((v,r)=>{const act=(cyc%desc.length)===r;c.strokeStyle=act?PURP:g;c.globalAlpha=act?1:0.25;c.lineWidth=act?2.2:1;c.beginPath();v.forEach((val,i)=>{const x=x0+i*(x1-x0)/(n-1),y=top+((val+ph)%6)*(bot-top)/5;i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();});c.globalAlpha=1;
+  T(c,'each orbit is one axis with six values; a description picks one value per axis, and the axes never end',W/2,H-14,p,12);}}
+
+/* ---------- thousands of orbits ---------- */
+const CX=[],SX=[];for(let k=0;k<6;k++){const a=-Math.PI/2+k*Math.PI/3;CX.push(Math.cos(a));SX.push(Math.sin(a));}
+let seed=17;const R2=()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296;};
+let N=0,X,Y,Z,LA,LB,LS,PX,PY,PF,phase=0,playing=true,yaw=0,acc=0,last=0;
+function gen(n,shape){N=n;X=new Float32Array(n);Y=new Float32Array(n);Z=new Float32Array(n);
+ if(shape==='lattice'){const m=Math.ceil(Math.cbrt(n))+1,pts=[];for(let i=0;i<m;i++)for(let j=0;j<m;j++)for(let k=0;k<m;k++){const x=(i-(m-1)/2)/(m/2),y=(j-(m-1)/2)/(m/2),z=(k-(m-1)/2)/(m/2);pts.push([x,y,z,x*x+y*y+z*z]);}pts.sort((a,b)=>a[3]-b[3]);for(let i=0;i<n;i++){X[i]=pts[i][0]*0.95;Y[i]=pts[i][1]*0.95;Z[i]=pts[i][2]*0.95;}}
+ else if(shape==='sphere'){for(let i=0;i<n;i++){const u=R2()*2-1,t=R2()*6.2832,r=Math.cbrt(R2()),s=Math.sqrt(1-u*u);X[i]=r*s*Math.cos(t);Y[i]=r*u;Z[i]=r*s*Math.sin(t);}}
+ else{for(let i=0;i<n;i++){const arm=Math.floor(R2()*3),r=Math.pow(R2(),0.6),t=arm*2.0944+r*4.2+(R2()-0.5)*0.55;X[i]=r*Math.cos(t);Z[i]=r*Math.sin(t);Y[i]=(R2()-0.5)*0.12*(1.2-r);}}
+ const Lk=[];for(let i=0;i<n;i++){let best=-1,bd=1e9;for(let c=0;c<40;c++){const j=Math.floor(R2()*n);if(j===i)continue;const d=(X[i]-X[j])**2+(Y[i]-Y[j])**2+(Z[i]-Z[j])**2;if(d<bd){bd=d;best=j;}}if(best>=0&&bd<0.06){let S=0;for(let k=0;k<6;k++)if(R2()<0.5)S|=1<<k;Lk.push([i,best,S]);}}
+ LA=Lk.map(l=>l[0]);LB=Lk.map(l=>l[1]);LS=Lk.map(l=>l[2]);PX=new Float32Array(n);PY=new Float32Array(n);PF=new Float32Array(n);}
+function drawBig(dt){const c=c2,W=W2,H=H2;if(playing){acc+=dt;if(acc>650){acc=0;phase=(phase+1)%6;document.getElementById('ph').textContent='phase '+LAB[phase]+' (the same everywhere)';}}
+ yaw+=(+document.getElementById('sp').value)*0.00035*Math.min(dt,50);c.fillStyle='#04060D';c.fillRect(0,0,W,H);
+ const cy=Math.cos(yaw),sy=Math.sin(yaw),p=0.42+0.12*Math.sin(yaw*0.7),cp=Math.cos(p),sp=Math.sin(p),sc=Math.min(W,H)*0.46;
+ const pt=(x,y,z)=>{let a=x*cy+z*sy,b=-x*sy+z*cy,cc=y*cp-b*sp;b=y*sp+b*cp;const f=2.4/(2.4+b);return[W/2+a*sc*f,H/2+cc*sc*f,f];};
+ for(let i=0;i<N;i++){const q=pt(X[i],Y[i],Z[i]);PX[i]=q[0];PY[i]=q[1];PF[i]=q[2];}
+ if(document.getElementById('ax').checked){c.strokeStyle='rgba(56,189,248,0.07)';c.lineWidth=1;for(let k=-5;k<=5;k++){const v=k*0.25;let a=pt(v,0.9,-1.25),b=pt(v,0.9,1.25);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();a=pt(-1.25,0.9,v);b=pt(1.25,0.9,v);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();}
+  [[1,0,0,'x'],[0,-1,0,'y'],[0,0,1,'z']].forEach(([ax,ay,az,l])=>{const a=pt(-ax*1.25,-ay*1.25,-az*1.25),b=pt(ax*1.25,ay*1.25,az*1.25);c.strokeStyle='rgba(148,163,184,0.35)';c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.stroke();c.fillStyle='rgba(203,213,225,0.8)';c.font='13px Georgia,serif';c.fillText(l,b[0]+6,b[1]);});}
+ const big=N<=900,base=big?5.2:(N<=2000?3.6:2.6),lay=f=>f<0.85?0:(f<1.05?1:2);
+ if(document.getElementById('lk').checked){c.lineWidth=0.6;for(let L0=0;L0<3;L0++){c.strokeStyle=['rgba(251,146,60,0.12)','rgba(251,146,60,0.22)','rgba(251,146,60,0.38)'][L0];c.beginPath();for(let q=0;q<LA.length;q++){const i=LA[q],j=LB[q];if(lay(Math.min(PF[i],PF[j]))!==L0)continue;const S=LS[q],ri=base*PF[i],rj=base*PF[j];for(let k=0;k<6;k++){if(!(S>>k&1))continue;const b=(phase+k)%6;c.moveTo(PX[i]+ri*CX[phase],PY[i]+ri*SX[phase]);c.lineTo(PX[j]+rj*CX[b],PY[j]+rj*SX[b]);}}c.stroke();}}
+ for(let L0=0;L0<3;L0++){c.strokeStyle=['rgba(125,211,252,0.18)','rgba(125,211,252,0.32)','rgba(125,211,252,0.55)'][L0];c.lineWidth=big?1:0.7;c.beginPath();for(let i=0;i<N;i++){if(lay(PF[i])!==L0)continue;const r=base*PF[i];c.moveTo(PX[i]+r*CX[0],PY[i]+r*SX[0]);for(let k=1;k<=6;k++){const kk=k%6;c.lineTo(PX[i]+r*CX[kk],PY[i]+r*SX[kk]);}}c.stroke();}
+ for(let L0=0;L0<3;L0++){c.fillStyle=['rgba(167,139,250,0.35)','rgba(167,139,250,0.65)','rgba(196,181,253,0.95)'][L0];c.beginPath();for(let i=0;i<N;i++){if(lay(PF[i])!==L0)continue;const r=base*PF[i],mx=PX[i]+r*CX[phase],my=PY[i]+r*SX[phase],d=Math.max(0.9,(big?1.9:1.3)*PF[i]);c.moveTo(mx+d,my);c.arc(mx,my,d,0,6.2832);}c.fill();}
+ c.fillStyle='rgba(226,232,240,0.85)';c.font='14px Georgia,serif';c.textAlign='left';c.fillText('𝔘₆  ·  '+N+' orbits  ·  x = (i, a),  s(i, a) = (i, a+1)',16,26);}
+const nIn=document.getElementById('n'),sh=document.getElementById('shape'),rb=()=>gen(+nIn.value,sh.value);
+nIn.oninput=()=>{document.getElementById('nout').textContent=nIn.value;rb();};sh.onchange=rb;
+document.getElementById('regen').onclick=()=>{seed=Math.floor(Math.random()*1e9);rb();};
+document.getElementById('play').onclick=e=>{playing=!playing;e.target.textContent=playing?'Pause':'Play';};
+gen(1500,'galaxy');setL(1);
+const t0=performance.now();function loop(t){const dt=t-last;last=t;if(!document.getElementById('levels').classList.contains('hidden'))drawLevels(t-t0);else drawBig(dt);requestAnimationFrame(loop);}requestAnimationFrame(loop);
+window.addEventListener('load',()=>setL(1));
+</script>
+</body>
+</html>
