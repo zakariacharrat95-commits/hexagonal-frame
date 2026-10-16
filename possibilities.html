@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Maʿlam · Space of possible worlds in 12 dimensions · Z. Charrat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#03050C;color:#E5E7EB;font-family:Georgia,'Times New Roman',serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+header{border-bottom:2px solid #3B82F6;padding-bottom:10px;margin-bottom:14px}
+header h1{font-size:24px;margin:0;font-weight:600}
+header p{margin:4px 0 0;color:#94A3B8;font-size:14px}
+.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 8px;font-size:14px;color:#94A3B8}
+.ctl label{display:flex;align-items:center;gap:6px}
+button,select{font:inherit;font-size:14px;color:#E5E7EB;background:#0F172A;border:1px solid #334155;border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:#7DD3FC}
+input[type=range]{accent-color:#A78BFA}
+canvas{width:100%;height:600px;display:block;border-radius:12px;background:#03050C;border:1px solid #111827;cursor:grab;touch-action:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.bx{background:#0B1226;border-radius:10px;padding:8px 12px}
+.bx .k{font-size:12px;color:#94A3B8}.bx .v{font-size:18px;font-weight:500}
+.fr{background:#0B1226;border-radius:10px;padding:8px 12px;overflow-x:auto;font-size:15px}
+.note{font-size:13px;color:#94A3B8;margin-top:6px}
+a{color:#7DD3FC}
+@media (max-width:640px){canvas{height:430px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>The Maʿlam · the space of possible worlds</h1>
+ <p>Zakaria Charrat · ORCID 0009-0009-3714-8416 · companion to “Hexagonal Worlds: a Universal Frame with Built-in Change” · <a href="./">all models</a></p>
+</header>
+<div class="ctl">
+  <label>Worlds <input type="range" id="k" min="2" max="6" value="6" style="width:90px"><b id="kv" style="color:#E5E7EB">6</b></label>
+  <label>Rotation speed <input type="range" id="rs" min="0" max="30" value="8" style="width:110px"></label>
+  <label>Change speed <input type="range" id="cs" min="0" max="30" value="6" style="width:110px"></label>
+  <label>Zoom <input type="range" id="zm" min="60" max="220" value="100" style="width:100px"></label>
+</div>
+<div class="ctl">
+  <label>Rotate <select id="mode"><option value="all">through all dimensions</option><option value="3d">in 3D only</option><option value="none">stop</option></select></label>
+  <label>Colour <select id="cm"><option value="sum">Σaⱼ mod 6 (invariant under s)</option><option value="a1">value of world 1</option></select></label>
+  <label>Highlighted orbits <input type="range" id="ho" min="0" max="12" value="5" style="width:90px"></label>
+</div>
+<div class="ctl">
+  <label><input type="checkbox" id="lat" checked> 4D lattice</label>
+  <label><input type="checkbox" id="axs" checked> Axes</label>
+  <label><input type="checkbox" id="pts" checked> All descriptions</label>
+  <button id="step">One step of the change s</button>
+  <button id="reset">New view</button>
+</div>
+<canvas id="cv"></canvas>
+<div class="note">Drag to rotate by hand. Exact: the points (every description of k worlds), the change s and the lattice. Chosen for display: the projection and the colours.</div>
+<div class="grid">
+  <div class="bx"><div class="k">Possible descriptions</div><div class="v" id="np">46,656</div></div>
+  <div class="bx"><div class="k">Dimensions</div><div class="v" id="nd">12</div></div>
+  <div class="bx"><div class="k">Phase of the change</div><div class="v" id="ph">1</div></div>
+  <div class="bx"><div class="k">Possible worlds with n = k orbits</div><div class="v" id="fw">5.80×10²⁵</div></div>
+</div>
+<div style="display:grid;gap:6px;margin-top:10px" id="fm"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');let W,H;const dpr=Math.min(2,window.devicePixelRatio||1);
+function rs(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}rs();addEventListener('resize',rs);
+const HUE=['#7DD3FC','#A78BFA','#2DD4BF','#FB923C','#F472B6','#FACC15'],LAB=[1,2,4,8,7,5];
+const FN=['','8','496','677,888','54,909,023,744','2.43×10¹⁷','5.80×10²⁵'];
+let K=6,D=12,PTS=null,NP=0,LAT=[],LATP=null,R=null,phi=0,seed=5,HL=[];
+const rnd=()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296;};
+function randOrth(d){const M=[];for(let i=0;i<d;i++){let v=Array.from({length:d},()=>rnd()*2-1);for(const u of M){const p=v.reduce((s,x,j)=>s+x*u[j],0);v=v.map((x,j)=>x-p*u[j]);}const n=Math.hypot(...v);M.push(v.map(x=>x/n));}return M;}
+function build(){K=+document.getElementById('k').value;D=2*K;NP=Math.pow(6,K);PTS=new Uint8Array(NP*K);
+ for(let p=0;p<NP;p++){let c=p;for(let j=0;j<K;j++){PTS[p*K+j]=c%6;c=Math.floor(c/6);}}
+ const L=Math.min(K,4),m=Math.pow(6,L);LATP=[];for(let p=0;p<m;p++){const a=new Array(K).fill(0);let c=p;for(let j=0;j<L;j++){a[j]=c%6;c=Math.floor(c/6);}LATP.push(a);}
+ LAT=[];for(let p=0;p<m;p++)for(let j=0;j<L;j++){const q=p+((LATP[p][j]+1)%6-LATP[p][j])*Math.pow(6,j);LAT.push([p,q]);}
+ R=randOrth(D);newHL();document.getElementById('kv').textContent=K;document.getElementById('np').textContent=NP.toLocaleString('en-US');
+ document.getElementById('nd').textContent=D;document.getElementById('fw').textContent=FN[K];}
+function newHL(){HL=[];for(let i=0;i<12;i++){const a=[];for(let j=0;j<K;j++)a.push(Math.floor(rnd()*6));HL.push(a);}}
+function rotPlane(i,j,t){const c=Math.cos(t),s=Math.sin(t);for(let r=0;r<D;r++){const a=R[i][r],b=R[j][r];R[i][r]=c*a-s*b;R[j][r]=s*a+c*b;}}
+let contrib=null;
+function prep(){contrib=[];for(let j=0;j<K;j++){const row=[];for(let v=0;v<6;v++){const th=2*Math.PI*v/6+phi,c=Math.cos(th),s=Math.sin(th);row.push([R[0][2*j]*c+R[0][2*j+1]*s,R[1][2*j]*c+R[1][2*j+1]*s,R[2][2*j]*c+R[2][2*j+1]*s]);}contrib.push(row);}}
+function scale(){return Math.min(W,H)*0.17*(+document.getElementById('zm').value/100)*Math.sqrt(6/K);}
+function proj(a){let x=0,y=0,z=0;for(let j=0;j<K;j++){const c=contrib[j][a[j]];x+=c[0];y+=c[1];z+=c[2];}const f=4.2/(4.2-z*0.5),sc=scale();return[W/2+x*sc*f,H/2+y*sc*f,z];}
+let drag=null;cv.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];cv.style.cursor='grabbing';cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag[0],dy=e.clientY-drag[1];drag=[e.clientX,e.clientY];rotPlane(0,2,dx*0.006);rotPlane(1,2,dy*0.006);});
+cv.addEventListener('pointerup',()=>{drag=null;cv.style.cursor='grab';});
+document.getElementById('k').oninput=build;document.getElementById('reset').onclick=()=>{seed=Math.floor(Math.random()*1e9);R=randOrth(D);newHL();};
+document.getElementById('step').onclick=()=>{phi+=2*Math.PI/6;};
+let last=performance.now();
+function frame(now){const dt=Math.min(50,now-last);last=now;
+ const mode=document.getElementById('mode').value,sp=+document.getElementById('rs').value*0.00004*dt;
+ if(mode==='all'){const pl=[[0,4],[1,7],[2,9],[3,11],[5,8],[6,10]];pl.forEach(([i,j],q)=>{if(i<D&&j<D)rotPlane(i,j,sp*(q%2?1:1.6));});if(D<12){rotPlane(0,D-1,sp);rotPlane(1,D-2,sp*1.3);}}
+ else if(mode==='3d'){rotPlane(0,2,sp*1.4);}
+ phi+=(+document.getElementById('cs').value)*0.00003*dt;prep();
+ ctx.fillStyle='#03050C';ctx.fillRect(0,0,W,H);const sc=scale();
+ if(document.getElementById('axs').checked){for(let j=0;j<K;j++){const xs=[],ys=[];for(const s of [-1.35,1.35]){const v=[R[0][2*j]*s*Math.sqrt(K),R[1][2*j]*s*Math.sqrt(K),R[2][2*j]*s*Math.sqrt(K)];const f=4.2/(4.2-v[2]*0.5);xs.push(W/2+v[0]*sc*f);ys.push(H/2+v[1]*sc*f);}
+  ctx.strokeStyle='rgba(226,232,240,0.45)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xs[0],ys[0]);ctx.lineTo(xs[1],ys[1]);ctx.stroke();ctx.fillStyle='#E2E8F0';ctx.font='14px Georgia,serif';ctx.fillText('O'+(j+1),xs[1]+6,ys[1]);}}
+ if(document.getElementById('lat').checked){ctx.strokeStyle='rgba(125,211,252,0.18)';ctx.lineWidth=0.6;ctx.beginPath();const P=LATP.map(proj);for(const[p,q]of LAT){ctx.moveTo(P[p][0],P[p][1]);ctx.lineTo(P[q][0],P[q][1]);}ctx.stroke();}
+ if(document.getElementById('pts').checked){const cm=document.getElementById('cm').value,a=new Array(K),sz=K>=6?1.4:(K===5?1.8:2.6);
+  const buckets=[[],[],[],[],[],[]];for(let p=0;p<NP;p++){let s=0;for(let j=0;j<K;j++){a[j]=PTS[p*K+j];s+=a[j];}const q=proj(a);buckets[cm==='sum'?s%6:a[0]].push(q[0],q[1]);}
+  ctx.globalAlpha=K>=6?0.6:0.85;buckets.forEach((b,c)=>{ctx.fillStyle=HUE[c];for(let i=0;i<b.length;i+=2)ctx.fillRect(b[i],b[i+1],sz,sz);});ctx.globalAlpha=1;}
+ const nh=+document.getElementById('ho').value;for(let h=0;h<nh;h++){const pts=[];for(let k=0;k<=6;k++)pts.push(proj(HL[h].map(v=>(v+k)%6)));ctx.strokeStyle='rgba(167,139,250,0.85)';ctx.lineWidth=1.4;ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();ctx.fillStyle='#F5F3FF';ctx.beginPath();ctx.arc(pts[0][0],pts[0][1],3.5,0,7);ctx.fill();}
+ const ph=((Math.round(phi/(2*Math.PI/6))%6)+6)%6;document.getElementById('ph').textContent=LAB[ph]+'  (s^'+ph+')';
+ ctx.fillStyle='rgba(226,232,240,0.85)';ctx.font='14px Georgia,serif';ctx.fillText('(ℤ/6)^'+K+' ⊂ ℝ^'+D+'  ·  every point is one way to read '+K+' worlds',14,24);
+ requestAnimationFrame(frame);}
+const F=[["The change acts on every world at once","s:(a_1,\\dots,a_k)\\mapsto(a_1+1,\\dots,a_k+1),\\qquad \\textstyle\\sum a_j \\bmod 6\\ \\text{is invariant}"],
+["Descriptions of the frame: one dimension per world","\\mathrm{Hom}_s(\\mathfrak U_6,\\mathbb Z/6)\\cong(\\mathbb Z/6)^{\\mathbb N},\\qquad (\\mathbb Z/6)^k\\subset(S^1)^k\\subset\\mathbb R^{2k}"],
+["How many possible worlds with n orbits","f(n)\\sim\\frac{8^n\\,64^{\\binom n2}}{6^{\\,n-1}\\,n!},\\qquad \\eta_n\\sim n\\,8^{\\,1-n}"],
+["The frame alone determines nothing","\\mathrm{dcl}(\\varnothing)=\\varnothing,\\qquad \\mathrm{dcl}(A)=\\langle A\\rangle"]];
+function renderF(){const fm=document.getElementById('fm');fm.innerHTML='';F.forEach(([k,m])=>{const d=document.createElement('div');d.className='fr';d.innerHTML='<div style="font-size:12px;color:#94A3B8">'+k+'</div><div class="m"></div>';fm.appendChild(d);try{katex.render(m,d.querySelector('.m'),{throwOnError:false});}catch(e){d.querySelector('.m').textContent=m;}});}
+window.addEventListener('load',renderF);
+build();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
