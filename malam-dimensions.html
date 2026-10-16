@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Maʿlam · possible worlds in all dimensions · Z. Charrat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#02030A;color:#E5E7EB;font-family:Georgia,'Times New Roman',serif}
+.wrap{max-width:1150px;margin:0 auto;padding:20px 16px 40px}
+header{border-bottom:2px solid #3B82F6;padding-bottom:10px;margin-bottom:14px}
+header h1{font-size:24px;margin:0;font-weight:600}
+header p{margin:4px 0 0;color:#94A3B8;font-size:14px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 8px;font-size:14px;color:#94A3B8}
+.row label{display:flex;align-items:center;gap:6px}
+button,select{font:inherit;font-size:14px;color:#E5E7EB;background:#0F172A;border:1px solid #334155;border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:#7DD3FC}
+input[type=range]{accent-color:#A78BFA}
+canvas{width:100%;height:620px;display:block;border-radius:12px;background:#02030A;border:1px solid #111827;cursor:grab;touch-action:none}
+.th{background:#0B1226;border-radius:10px;padding:9px 13px;font-size:14px;line-height:1.5}
+.th b{color:#C4B5FD}.th .pf{color:#CBD5E1;font-size:13px;margin-top:3px}
+.note{font-size:13px;color:#94A3B8;margin-top:8px}
+a{color:#7DD3FC}
+@media (max-width:640px){canvas{height:440px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>The Maʿlam · possible worlds in all dimensions</h1>
+ <p>Zakaria Charrat · ORCID 0009-0009-3714-8416 · <a href="./">all models</a></p>
+</header>
+<div class="row">
+  <label>Worlds <input type="range" min="8" max="15" step="1" value="14" id="D" style="width:160px"> <b id="Dout" style="color:#E5E7EB">16,384</b></label>
+  <select id="space"><option value="dims">Space: all dimensions (one axis per question)</option><option value="pic">Space: 3D picture</option></select>
+  <select id="shape"><option value="galaxy">Galaxy</option><option value="sphere">Sphere</option><option value="lattice">Lattice</option></select>
+  <select id="wt"><option value="nest">Dimensions: nested (galaxies within galaxies)</option><option value="equal">Dimensions: equal (hypercube)</option></select>
+  <button id="regen">New world (chance)</button>
+  <button id="play">Pause</button>
+</div>
+<div class="row">
+  <label><input type="checkbox" id="lk" checked> Links (one answer apart)</label>
+  <label><input type="checkbox" id="ax" checked> Axes</label>
+  <label><input type="checkbox" id="nb" checked> Neighbours of the white world</label>
+  <label>Rotation <input type="range" min="0" max="20" value="6" id="sp" style="width:100px"></label>
+  <label>Change speed <input type="range" min="0" max="20" value="6" id="cs" style="width:100px"></label>
+  <label>Zoom <input type="range" min="60" max="300" value="100" id="zm" style="width:100px"></label>
+  <select id="cm"><option value="first">Colour: first answers</option><option value="sum">Colour: number of yes</option></select>
+</div>
+<canvas id="cv"></canvas>
+<div class="note"><span id="info">step 0</span> · Drag to rotate · scroll to zoom.<br>Exact: each point is a possible world placed by its address of yes/no answers; the change drops the first answer of every world; links and neighbours are recomputed from the current addresses. Chosen for display: the shape map or the weights of the axes, the colours and the glow.</div>
+<div style="display:grid;gap:8px;margin-top:12px" id="thm"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');let W,H;const dpr=Math.min(2,window.devicePixelRatio||1);
+function rs(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}rs();addEventListener('resize',rs);
+const PAL=['#7DD3FC','#A78BFA','#2DD4BF','#FB923C','#F472B6','#FACC15','#4ADE80','#60A5FA'];
+const DEEP=30;let D=14,N=0,M=3,BITS=null,KEY=null,MAP=null,C,T,S,COL,phase=1,playing=true,yaw=0.5,pitch=0.38,steps=0,seed=77,sel=0,RM=null;
+const R=()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296;};
+function shapeMap(u,v,w,shape){if(shape==='sphere'){const r=Math.cbrt(u),ct=2*v-1,st=Math.sqrt(Math.max(0,1-ct*ct)),ph=2*Math.PI*w;return[r*st*Math.cos(ph),r*ct,r*st*Math.sin(ph)];}
+ if(shape==='lattice')return[2*u-1,2*v-1,2*w-1];
+ const r=Math.pow(u,0.7),a3=w*3,arm=Math.min(2,Math.floor(a3)),spread=(a3-arm-0.5)*0.6,ang=arm*2.0944+r*4.4+spread*(1.1-r);return[r*Math.cos(ang),(v-0.5)*0.16*(1.15-r),r*Math.sin(ang)];}
+function posOf(o,shape){let u=0,v=0,w=0,f=0.5;for(let i=0;i+2<DEEP;i+=3){u+=BITS[o+i]*f;v+=BITS[o+i+1]*f;w+=BITS[o+i+2]*f;f/=2;}return shapeMap(u,v,w,shape);}
+function mode(){return document.getElementById('space').value;}
+function weights(){const eq=document.getElementById('wt').value==='equal';const w=[];for(let i=0;i<D;i++)w.push(eq?1/Math.sqrt(D)*1.6:0.62*Math.pow(0.78,i));return w;}
+function coordsOf(o,out,off){if(mode()==='pic'){const q=posOf(o,document.getElementById('shape').value);out[off]=q[0];out[off+1]=q[1];out[off+2]=q[2];}
+ else{const w=weights();for(let i=0;i<D;i++)out[off+i]=w[i]*(BITS[o+i]?1:-1);}}
+function randOrth(n){const Mx=[];for(let i=0;i<n;i++){let v=Array.from({length:n},()=>R()*2-1);for(const u of Mx){const p=v.reduce((a,x,j)=>a+x*u[j],0);v=v.map((x,j)=>x-p*u[j]);}const nn=Math.hypot(...v);Mx.push(v.map(x=>x/nn));}return Mx;}
+function rotPlane(i,j,t){const c=Math.cos(t),s2=Math.sin(t);for(let r=0;r<M;r++){const a=RM[i][r],b=RM[j][r];RM[i][r]=c*a-s2*b;RM[j][r]=s2*a+c*b;}}
+function colOf(o){if(document.getElementById('cm').value==='sum'){let s=0;for(let i=0;i<D;i++)s+=BITS[o+i];return Math.min(7,Math.floor(s*8/(D+1)));}return BITS[o]*4+BITS[o+1]*2+BITS[o+2];}
+function rekey(){MAP.fill(-1);for(let p=0;p<N;p++){let k=0;const o=p*DEEP;for(let i=0;i<D;i++)k=k*2+BITS[o+i];KEY[p]=k;if(MAP[k]<0)MAP[k]=p;}}
+function build(){D=+document.getElementById('D').value;N=1<<D;document.getElementById('Dout').textContent=N.toLocaleString('en-US');BITS=new Uint8Array(N*DEEP);KEY=new Int32Array(N);MAP=new Int32Array(N);
+ for(let p=0;p<N;p++){for(let i=0;i<D;i++)BITS[p*DEEP+i]=(p>>(D-1-i))&1;for(let i=D;i<DEEP;i++)BITS[p*DEEP+i]=R()<0.5?1:0;}
+ M=mode()==='pic'?3:D;C=new Float32Array(N*M);T=new Float32Array(N*M);S=new Float32Array(N*M);COL=new Uint8Array(N);
+ for(let p=0;p<N;p++){coordsOf(p*DEEP,C,p*M);COL[p]=colOf(p*DEEP);}T.set(C);S.set(C);RM=randOrth(Math.max(M,3));
+ rekey();sel=Math.floor(R()*N);steps=0;phase=1;}
+function changeStep(){const sh=document.getElementById('shape').value;for(let p=0;p<N;p++){const o=p*DEEP;for(let i=0;i<DEEP-1;i++)BITS[o+i]=BITS[o+i+1];BITS[o+DEEP-1]=R()<0.5?1:0;
+  COL[p]=colOf(o);}S.set(C);for(let p=0;p<N;p++)coordsOf(p*DEEP,T,p*M);rekey();steps++;phase=0;}
+let drag=null;cv.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];cv.style.cursor='grabbing';cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag[0],dy=e.clientY-drag[1];if(mode()==='pic'){yaw+=dx*0.006;pitch=Math.max(-1.45,Math.min(1.45,pitch+dy*0.006));}else{rotPlane(0,2,dx*0.006);rotPlane(1,2,dy*0.006);}drag=[e.clientX,e.clientY];});
+cv.addEventListener('pointerup',()=>{drag=null;cv.style.cursor='grab';});
+cv.addEventListener('wheel',e=>{e.preventDefault();const z=document.getElementById('zm');z.value=Math.max(60,Math.min(300,+z.value-e.deltaY*0.2));},{passive:false});
+document.getElementById('D').oninput=build;document.getElementById('shape').onchange=build;document.getElementById('space').onchange=build;document.getElementById('wt').onchange=build;document.getElementById('cm').onchange=()=>{for(let p=0;p<N;p++)COL[p]=colOf(p*DEEP);};
+document.getElementById('regen').onclick=()=>{seed=Math.floor(Math.random()*1e9);build();};
+document.getElementById('play').onclick=e=>{playing=!playing;e.target.textContent=playing?'Pause':'Play';};
+let last=performance.now(),acc=0;
+function frame(now){const dt=Math.min(50,now-last);last=now;if(!drag)yaw+=(+document.getElementById('sp').value)*0.00004*dt;
+ const cs=+document.getElementById('cs').value;if(playing&&cs>0){acc+=dt*cs/6;if(phase>=1&&acc>1600){acc=0;changeStep();}}
+ if(phase<1)phase=Math.min(1,phase+dt/700);const e=phase<1?(1-Math.cos(Math.PI*phase))/2:1;
+ for(let i=0;i<N*M;i++)C[i]=S[i]+(T[i]-S[i])*e;
+ if(mode()==='dims'&&!drag){const sp2=(+document.getElementById('sp').value)*0.00004*dt;for(let i=0;i<M;i++){rotPlane(i,(i+1)%M,sp2*(1+0.3*(i%3)));if(M>3)rotPlane(i,(i+3)%M,sp2*0.6);}}
+ const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),sc=Math.min(W,H)*0.43*(+document.getElementById('zm').value/100);
+ const pr=(x,y,z)=>{let a=x*cy+z*sy,b=-x*sy+z*cy,c=y*cp-b*sp;b=y*sp+b*cp;const f=2.6/(2.6+b);return[W/2+a*sc*f,H/2+c*sc*f,f];};
+ const prD=(v,off)=>{let x=0,y=0,z=0;for(let j=0;j<M;j++){const c=v[off+j];x+=RM[0][j]*c;y+=RM[1][j]*c;z+=RM[2][j]*c;}const f=2.6/(2.6-z*0.9);return[W/2+x*sc*f,H/2+y*sc*f,f];};
+ const dims=mode()==='dims';
+ ctx.globalCompositeOperation='source-over';ctx.fillStyle='#02030A';ctx.fillRect(0,0,W,H);
+ if(document.getElementById('ax').checked&&dims){const w=weights();for(let j=0;j<M;j++){const a=new Float32Array(M),b=new Float32Array(M);a[j]=-Math.max(w[j]*1.6,0.12);b[j]=-a[j];const pa=prD(a,0),pb=prD(b,0);ctx.strokeStyle='rgba(226,232,240,'+(0.5-0.02*j)+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pa[0],pa[1]);ctx.lineTo(pb[0],pb[1]);ctx.stroke();ctx.fillStyle='rgba(226,232,240,'+(0.9-0.03*j)+')';ctx.font='13px Georgia,serif';ctx.fillText('Q'+(j+1),pb[0]+5,pb[1]);}}
+ if(document.getElementById('ax').checked&&!dims){ctx.strokeStyle='rgba(56,189,248,0.08)';ctx.lineWidth=1;for(let k=-5;k<=5;k++){const v=k*0.25;let a=pr(v,0.95,-1.25),b=pr(v,0.95,1.25);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();a=pr(-1.25,0.95,v);b=pr(1.25,0.95,v);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}
+  [['x',[1.3,0,0]],['y',[0,-1.3,0]],['z',[0,0,1.3]]].forEach(([l,v])=>{const a=pr(-v[0],-v[1],-v[2]),b=pr(v[0],v[1],v[2]);ctx.strokeStyle='rgba(148,163,184,0.4)';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.fillStyle='rgba(226,232,240,0.85)';ctx.font='14px Georgia,serif';ctx.fillText(l,b[0]+6,b[1]);});}
+ const P=new Float32Array(N*3);for(let p=0;p<N;p++){const q=dims?prD(C,p*M):pr(C[p*3],C[p*3+1],C[p*3+2]);P[3*p]=q[0];P[3*p+1]=q[1];P[3*p+2]=q[2];}
+ if(document.getElementById('lk').checked){ctx.strokeStyle='rgba(251,146,60,0.13)';ctx.lineWidth=0.6;ctx.beginPath();for(let p=0;p<N;p++){const k=KEY[p];if(k&1)continue;const q=MAP[k|1];if(q<0)continue;ctx.moveTo(P[3*p],P[3*p+1]);ctx.lineTo(P[3*q],P[3*q+1]);}ctx.stroke();}
+ ctx.globalCompositeOperation='lighter';const sz=N>16000?1.5:(N>4000?2:2.8);
+ for(let c=0;c<8;c++){ctx.fillStyle=PAL[c];for(let L=0;L<3;L++){ctx.globalAlpha=[0.25,0.45,0.75][L];for(let p=0;p<N;p++){if(COL[p]!==c)continue;const f=P[3*p+2],lay=f<0.9?0:(f<1.1?1:2);if(lay!==L)continue;const s=sz*f;ctx.fillRect(P[3*p]-s/2,P[3*p+1]-s/2,s,s);}}}
+ ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+ if(document.getElementById('nb').checked){const sx=P[3*sel],sy2=P[3*sel+1],ks=KEY[sel];ctx.strokeStyle='rgba(245,243,255,0.55)';ctx.lineWidth=1;
+  for(let i=0;i<D;i++){const q=MAP[ks^(1<<(D-1-i))];if(q<0)continue;ctx.beginPath();ctx.moveTo(sx,sy2);ctx.lineTo(P[3*q],P[3*q+1]);ctx.stroke();ctx.fillStyle='#E9D5FF';ctx.beginPath();ctx.arc(P[3*q],P[3*q+1],2.5,0,7);ctx.fill();}
+  ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.arc(sx,sy2,4.5,0,7);ctx.fill();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.arc(sx,sy2,10,0,7);ctx.stroke();}
+ ctx.fillStyle='rgba(226,232,240,0.88)';ctx.font='14px Georgia,serif';ctx.fillText('The Maʿlam · '+N.toLocaleString('en-US')+' possible worlds'+(dims?' in '+M+' dimensions, one axis per question, rotating through all of them':', one point each, placed by its address of yes/no answers'),14,24);
+ const o=sel*DEEP;let s='';for(let i=0;i<Math.min(D,16);i++)s+=BITS[o+i];document.getElementById('info').textContent='step '+steps+' · white world address: '+s+'…';
+ requestAnimationFrame(frame);}
+const TH=[["Every possible world has one place, given by its address","x=(a_1,a_2,a_3,\\dots)\\in\\{0,1\\}^{\\mathbb N}\\ \\longmapsto\\ \\Big(\\sum_k a_{3k-2}2^{-k},\\ \\sum_k a_{3k-1}2^{-k},\\ \\sum_k a_{3k}2^{-k}\\Big)","Each drawn point is one world: its first answers fix its region, deeper answers are drawn by chance. The point's place is computed from its address, not chosen."],
+["The frame fills every shape","\\{0,1\\}^{\\mathbb N}\\twoheadrightarrow[0,1]^3\\twoheadrightarrow\\text{ball, galaxy, lattice}\\quad\\text{(continuous and onto)}","Binary expansion maps the space of worlds continuously onto the cube; the shape maps send the cube onto the ball, the spiral disc or the lattice. Every point of each shape is the place of some world."],
+["Everything moves, the frame stays the same","\\mu\\big(\\sigma^{-1}A\\big)=\\mu(A)\\quad\\text{for the coin-flip measure } \\mu","The change σ drops the first answer of every world. Every point moves, yet the distribution of all worlds is unchanged: the coin-flip measure is invariant under the shift."],
+["All dimensions: one axis per question","x\\mapsto\\sum_{i=1}^{D} w_i\\,(2a_i-1)\\,e_i\\in\\mathbb R^{D},\\qquad w_i>0","Each of the first D questions is one orthogonal axis; the map is one-to-one, so every world of length D has its own point. With equal weights the worlds are the 2^D vertices of a D-dimensional cube; with decreasing weights w_i=0.62\\cdot0.78^{i} each answer splits the worlds into two smaller copies, galaxies within galaxies. The view rotates through all D dimensions."],
+["Neighbours: worlds one answer apart","x\\sim y\\iff \\#\\{i\\le D:\\ a_i\\neq b_i\\}=1","Recomputed from the current addresses at every step: the white lines join the selected world to drawn worlds differing from it in exactly one of its first D answers; the orange links join drawn worlds differing only in the D-th answer."],
+["No list contains every world","|\\{0,1\\}^{\\mathbb N}|=2^{\\aleph_0}","Cantor's diagonal argument: the frame is larger than any enumeration of its contents."],
+["No privileged world","T(z)=z\\oplus x\\oplus y\\ \\text{sends } x \\text{ to } y \\text{ and preserves the frame}","Answer-by-answer addition mod 2 is a symmetry of the frame that moves any world to any other, the empty world included."]];
+function renderT(){const el=document.getElementById('thm');el.innerHTML='';TH.forEach(([k,m,p])=>{const d1=document.createElement('div');d1.className='th';d1.innerHTML='<b>'+k+'</b><div class="m" style="margin:4px 0;overflow-x:auto"></div><div class="pf">'+p+'</div>';el.appendChild(d1);try{katex.render(m,d1.querySelector('.m'),{throwOnError:false});}catch(e){d1.querySelector('.m').textContent=m;}});}
+window.addEventListener('load',renderT);
+build();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
