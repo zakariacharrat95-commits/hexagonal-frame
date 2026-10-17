@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Port Respire · a living quay wall · Z. Charrat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f7; --panel:#ffffff; --panel-2:#f4f6fa; --ink:#14202e; --muted:#5b6676; --line:#d9dfe8;
+  --blue:#1F4E99; --algae:#2E7D5B; --sap:#B7791F; --mix:#4B5563; --emit:#B3402F; --gold:#F2B632;
+  --scene:#0d1b2c; --shadow:0 10px 30px rgba(10,25,45,.18);
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#08111c; --panel:#0f1b2a; --panel-2:#13233a; --ink:#e7edf5; --muted:#9aa8ba; --line:#22344d;
+    --blue:#7fa6e6; --algae:#5cc092; --sap:#e0a64b; --mix:#a3acb9; --emit:#e07a66; --gold:#F2B632;
+    --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#08111c; --panel:#0f1b2a; --panel-2:#13233a; --ink:#e7edf5; --muted:#9aa8ba; --line:#22344d;
+  --blue:#7fa6e6; --algae:#5cc092; --sap:#e0a64b; --mix:#a3acb9; --emit:#e07a66; --gold:#F2B632;
+  --shadow:0 10px 30px rgba(0,0,0,.45); color-scheme: dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+h1,h2,h3,.serif{font-family:"Literata",Georgia,"Times New Roman",serif}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+#app{position:relative;height:100%;display:grid;grid-template-columns:340px 1fr}
+#side{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;z-index:5;display:flex;flex-direction:column}
+#stage{position:relative;overflow:hidden;background:var(--scene)}
+canvas#gl{display:block;width:100%;height:100%}
+
+.brand{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.brand h1{font-size:22px;line-height:1.15;margin:0 0 4px;font-weight:700}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+.brand a{color:var(--blue);text-decoration:none}
+.brand .hex{display:inline-block;width:14px;height:14px;vertical-align:-1px;margin-right:6px;background:var(--gold);clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%)}
+
+details{border-bottom:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;padding:12px 18px;font-weight:600;display:flex;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary .dot{width:10px;height:10px;border-radius:2px;flex:none}
+summary::after{content:"";margin-left:auto;width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+details[open] summary::after{transform:rotate(-135deg)}
+.sec{padding:2px 18px 16px}
+.row{margin:10px 0}
+.row label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted)}
+.row label b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--blue);margin:6px 0 0}
+.toggles{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip.p1[aria-pressed="true"]{background:var(--algae);border-color:var(--algae)}
+.chip.p2[aria-pressed="true"]{background:var(--sap);border-color:var(--sap)}
+.chip.p3[aria-pressed="true"]{background:var(--mix);border-color:var(--mix)}
+.btn{border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer;font-size:12.5px}
+.btn.ghost{background:transparent;color:var(--blue)}
+.note{font-size:11.5px;color:var(--muted);margin:6px 0 0}
+.eq{font-family:"Literata",Georgia,serif;font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0;overflow-x:auto;white-space:nowrap}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12.5px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv span:nth-child(even){font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+canvas.mini{width:100%;height:150px;display:block;background:var(--panel-2);border:1px solid var(--line);border-radius:8px}
+
+.side-foot{margin-top:auto;padding:12px 18px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}
+
+/* overlays on stage */
+#title{position:absolute;left:18px;top:14px;color:#e8eef6;pointer-events:none;max-width:60%}
+#title h2{margin:0;font-size:20px;font-weight:600;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+#title p{margin:2px 0 0;font-size:12.5px;color:#b9c6d6}
+#clock{position:absolute;right:16px;top:14px;display:flex;gap:8px;align-items:center}
+#clock .yr{background:rgba(10,22,38,.75);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px 12px;font-family:"Literata",serif;font-size:18px;font-variant-numeric:tabular-nums}
+#clock button{background:rgba(10,22,38,.75);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:600}
+#readout{position:absolute;right:16px;bottom:66px;width:330px;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px}
+#readout h3{margin:0 0 8px;font-size:14px}
+#legend{position:absolute;left:16px;bottom:66px;background:rgba(10,22,38,.78);color:#dfe7f1;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;font-size:12px;max-width:260px}
+#legend .bar{height:10px;border-radius:5px;margin:6px 0 3px;background:linear-gradient(90deg,#b3402f,#8b929c 50%,#2e9d6b)}
+#legend .ends{display:flex;justify-content:space-between;color:#a9b6c6}
+#legend .hint{margin-top:6px;color:#a9b6c6}
+#truth{position:absolute;left:0;right:0;bottom:0;padding:8px 16px;background:rgba(6,14,24,.86);color:#b8c4d3;font-size:11.5px;line-height:1.4}
+#truth b{color:#e7edf5;font-weight:600}
+.lbl{position:absolute;transform:translate(-50%,-50%);font-size:11px;color:#dbe5f1;background:rgba(8,18,30,.6);border-radius:6px;padding:1px 6px;pointer-events:none;white-space:nowrap}
+.lbl.ex{color:#ffcfb8}
+.lbl.res{color:#ffe1a3}
+#menuBtn{display:none}
+
+/* inspector */
+#insp{position:absolute;top:56px;right:16px;width:min(440px,calc(100% - 32px));max-height:calc(100% - 112px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);display:none;z-index:8}
+#insp.open{display:block}
+#insp header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+#insp header h3{margin:0;font-size:16px}
+#insp header .x{margin-left:auto;border:none;background:var(--panel-2);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px}
+.tabs{display:flex;gap:4px;padding:10px 14px 0}
+.tab{border:none;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600;font-size:13px}
+.tab[aria-selected="true"]{background:var(--panel-2);color:var(--ink)}
+.pane{padding:10px 14px 14px;display:none}
+.pane.on{display:block}
+#inspGL,#sapCv,#carbCv{width:100%;display:block;border-radius:10px;background:#0f1d2e}
+#inspGL{height:270px}
+#sapCv{height:260px}
+#carbCv{height:190px;background:var(--panel-2);border:1px solid var(--line)}
+.step{font-size:12.5px;margin:8px 0 0;min-height:38px}
+.layers{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;font-size:12px;margin-top:8px}
+.sw{width:12px;height:12px;border-radius:3px;margin-top:3px}
+
+@media (max-width: 860px){
+  #app{grid-template-columns:1fr}
+  #side{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:62%;transform:translateY(105%);transition:transform .25s;border-right:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  #side.open{transform:none}
+  #menuBtn{display:block;position:absolute;left:16px;top:64px;z-index:6;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:600}
+  #readout{width:auto;left:16px;right:16px;bottom:96px}
+  #legend{display:none}
+  #title{max-width:55%}
+  #title h2{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side" aria-label="Model controls">
+    <div class="brand">
+      <h1><span class="hex" aria-hidden="true"></span>Port Respire</h1>
+      <p>A living quay wall, module by module. Zakaria Charrat · ORCID <a href="https://orcid.org/0009-0009-3714-8416" target="_blank" rel="noopener">0009-0009-3714-8416</a> · <a href="https://zakariacharrat95-commits.github.io/hexagonal-frame/" target="_blank" rel="noopener">all models</a></p>
+    </div>
+
+    <details open>
+      <summary><span class="dot" style="background:var(--gold)"></span>Pillars and materials</summary>
+      <div class="sec">
+        <div class="toggles" role="group" aria-label="Pillars">
+          <button class="chip p1" id="tP1" aria-pressed="true">Algae</button>
+          <button class="chip p2" id="tP2" aria-pressed="true">SAP self-healing</button>
+          <button class="chip p3" id="tP3" aria-pressed="true">CO₂-absorbing mix</button>
+        </div>
+        <div class="row"><label>Concrete carbon intensity <b id="vCi"></b></label><input id="ci" type="range" min="250" max="450" step="10" value="350"></div>
+        <div class="row"><label>SAP life gain η₂ <b id="vE2"></b></label><input id="e2" type="range" min="0" max="1.5" step="0.05" value="1"></div>
+        <div class="row"><label>CO₂-mix reduction η₃ <b id="vE3"></b></label><input id="e3" type="range" min="0" max="0.8" step="0.01" value="0.6"></div>
+        <div class="toggles"><button class="chip" id="preFC">FastCarb-type η₃ = 0.15</button><button class="chip" id="preGC">γ-C₂S-type η₃ = 0.60</button></div>
+        <div class="row"><label>Base service life L₀ <b id="vL0"></b></label><input id="L0" type="range" min="25" max="80" step="1" value="50"></div>
+        <div class="eq">L = L₀(1 + η₂) &nbsp;&nbsp; E = c<sub>i</sub>·V·(1 − η₃)</div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="dot" style="background:var(--algae)"></span>Biology on the face</summary>
+      <div class="sec">
+        <div class="row"><label>Net production α <b id="vA"></b></label><input id="al" type="range" min="0.07" max="5" step="0.01" value="0.9"></div>
+        <div class="row"><label>Light, temperature, emersion ε <b id="vEp"></b></label><input id="ep" type="range" min="0.1" max="1" step="0.01" value="0.65"></div>
+        <div class="row"><label>Pollution penalty βP <b id="vBp"></b></label><input id="bp" type="range" min="0" max="0.6" step="0.01" value="0.2"></div>
+        <div class="row"><label>Calcification γ <b id="vG"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="0"></div>
+        <div class="row"><label>Permanence share π <b id="vPi"></b></label><input id="pi" type="range" min="0.1" max="1" step="0.01" value="1"></div>
+        <div class="eq">F = S·[α·ε·(1 − βP) − ψ·0.44·γ], &nbsp; ψ = 0.6</div>
+        <p class="note">α range 0.07–5 g C m⁻² d⁻¹ and median 0.9 from van der Heijden &amp; Kamenos (2015). Calcification is charged against the flux, not added to it.</p>
+      </div>
+    </details>
+
+    <details open>
+      <summary><span class="dot" style="background:var(--blue)"></span>Time and tide</summary>
+      <div class="sec">
+        <div class="row"><label>Year since installation <b id="vT"></b></label><input id="yr" type="range" min="0" max="120" step="0.1" value="0"></div>
+        <div class="row"><label>Playback speed <b id="vSp"></b></label><input id="sp" type="range" min="1" max="20" step="1" value="6"></div>
+        <div class="row"><label>Tidal range <b id="vTr"></b></label><input id="tr" type="range" min="0" max="8" step="0.1" value="6.5"></div>
+        <p class="note">Each module turns from red (still repaying its embodied carbon) to green (net sink) at its break-even year, and to grey after its service life L.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="dot" style="background:var(--sap)"></span>Siting on the quay</summary>
+      <div class="sec">
+        <div class="toggles"><button class="chip" id="tSite" aria-pressed="false">Apply siting plan</button><button class="chip" id="tAuth" aria-pressed="false">Reserve authorised</button></div>
+        <div class="row"><label>Budget (modules) <b id="vBud"></b></label><input id="bud" type="range" min="0" max="900" step="10" value="450"></div>
+        <div class="row"><label>Weight on carbon λ<sub>C</sub> <b id="vLc"></b></label><input id="lc" type="range" min="0" max="1" step="0.05" value="0.6"></div>
+        <div class="row"><label>Weight on biodiversity λ<sub>B</sub> <b id="vLb"></b></label><input id="lb" type="range" min="0" max="1" step="0.05" value="0.4"></div>
+        <div class="row"><label>Weight on cost λ<sub>E</sub> <b id="vLe"></b></label><input id="le" type="range" min="0" max="1" step="0.05" value="0.2"></div>
+        <div class="eq">max Σ (λ<sub>C</sub>Ĉ<sub>k</sub> + λ<sub>B</sub>B̂<sub>k</sub> − λ<sub>E</sub>ĉ) n<sub>k</sub> &nbsp;s.t. Σn<sub>k</sub> ≤ budget, n<sub>k</sub> ≤ min(N<sub>k</sub>, W<sub>k</sub>/τ)</div>
+        <div id="siteOut" class="note"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="dot" style="background:#7a5fb0"></span>Pilot and Bayesian learning</summary>
+      <div class="sec">
+        <div class="row"><label>Pilot measurements m <b id="vM"></b></label><input id="pm" type="range" min="1" max="40" step="1" value="12"></div>
+        <div class="row"><label>Prior uncertainty σ₀ (on ln α) <b id="vS0"></b></label><input id="s0" type="range" min="0.2" max="1.5" step="0.05" value="0.8"></div>
+        <div class="row"><label>Measurement noise σₑ <b id="vSe"></b></label><input id="se" type="range" min="0.1" max="1.2" step="0.05" value="0.5"></div>
+        <div class="toggles"><button class="btn" id="runPilot">Run pilot</button><button class="btn ghost" id="resetPilot">Reset</button></div>
+        <canvas class="mini" id="postCv" aria-label="Prior and posterior of the algal flux"></canvas>
+        <div class="kv" style="margin-top:8px">
+          <span>P(net sink over life), prior</span><span id="pPrior">–</span>
+          <span>P(net sink over life), posterior</span><span id="pPost">–</span>
+          <span>Posterior median α</span><span id="aPost">–</span>
+        </div>
+        <p class="note">The pilot draws a hidden “true” α, then updates the prior with equation (10) of the proposal.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="dot" style="background:#3d8fb8"></span>Economics</summary>
+      <div class="sec">
+        <div class="row"><label>Capex per module I <b id="vI"></b></label><input id="cap" type="range" min="39" max="71" step="1" value="55"></div>
+        <div class="row"><label>Avoided maintenance M <b id="vMa"></b></label><input id="ma" type="range" min="0" max="3" step="0.1" value="0.5"></div>
+        <div class="row"><label>Discount rate r <b id="vR"></b></label><input id="rr" type="range" min="0" max="0.1" step="0.005" value="0.04"></div>
+        <div class="row"><label>Carbon price p <b id="vP"></b></label><input id="cp" type="range" min="0" max="400" step="5" value="80"></div>
+        <div class="kv">
+          <span>Levelised cost of removal</span><span id="lcor">–</span>
+          <span>NPV per module at price p</span><span id="npv">–</span>
+        </div>
+        <p class="note">No compliance market buys nature-based removals before the EU ETS review due by 2034; p here is a voluntary or shadow price.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="dot" style="background:#8a9099"></span>View</summary>
+      <div class="sec">
+        <div class="toggles">
+          <button class="chip" id="vShip" aria-pressed="false">Moored vessel</button>
+          <button class="chip" id="vYard" aria-pressed="true">Cranes and yard</button>
+          <button class="chip" id="vLab" aria-pressed="true">Segment labels</button>
+          <button class="chip" id="vRot" aria-pressed="false">Auto-rotate</button>
+        </div>
+        <div class="toggles" role="group" aria-label="Colour">
+          <button class="chip" id="cNet" aria-pressed="true">Colour: net carbon</button>
+          <button class="chip" id="cVal" aria-pressed="false">Colour: siting value</button>
+        </div>
+        <div class="toggles">
+          <button class="chip" id="camA">Overview</button>
+          <button class="chip" id="camB">Wall close-up</button>
+          <button class="chip" id="camC">From the water</button>
+        </div>
+        <div class="toggles"><button class="chip" id="themeBtn">Switch light / dark panel</button></div>
+      </div>
+    </details>
+
+    <div class="side-foot">Click any hexagon on the wall to pull it out and look inside.</div>
+  </aside>
+
+  <main id="stage">
+    <canvas id="gl" aria-label="3D quay wall with Port Respire modules"></canvas>
+    <div id="labels" aria-hidden="true"></div>
+    <div id="title"><h2>A quay wall that repays its own concrete</h2><p>12 segments · 60 m of wall · hexagonal retrofit modules in the tidal zone</p></div>
+    <button id="menuBtn">Controls</button>
+    <div id="clock"><span class="yr" id="yrBadge">Year 0</span><button id="play" aria-label="Play">Play</button></div>
+    <div id="legend">
+      <div>Net carbon of each module at the current year</div>
+      <div class="bar"></div>
+      <div class="ends"><span>repaying concrete</span><span>net sink</span></div>
+      <div class="hint">Grey: end of service life. Hidden: not chosen by the siting plan.</div>
+    </div>
+    <section id="readout" aria-live="polite">
+      <h3>Whole wall at year <span id="rYr">0</span></h3>
+      <div class="kv">
+        <span>Modules on the wall</span><span id="rN">–</span>
+        <span>Net carbon so far</span><span id="rNet">–</span>
+        <span>Removal per year</span><span id="rAnn">–</span>
+        <span>Break-even, reference module</span><span id="rBe">–</span>
+        <span>Service life L</span><span id="rL">–</span>
+      </div>
+      <canvas class="mini" id="beCv" style="margin-top:10px;height:120px" aria-label="Net carbon of one module over time"></canvas>
+    </section>
+    <div id="truth"><b>Exact:</b> each module evaluates equations (1) and (3)–(6) of the proposal with the parameters on the left; break-even year = E(1 − η₃) / (πF); the siting plan is the exact optimum of the integer programme (7)–(8) because every module has the same unit cost; the posterior is equation (10). <b>Chosen for display:</b> wall geometry, segment exposure and biodiversity scores, the tide, seasonal shimmer, algae cover, the hidden pilot α, the self-healing animation and all colours.</div>
+
+    <div id="insp" role="dialog" aria-modal="false" aria-labelledby="inspTitle">
+      <header><h3 id="inspTitle">Module</h3><button class="x" id="inspClose" aria-label="Close and put the module back">×</button></header>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-p="pIn">Inside</button>
+        <button class="tab" role="tab" aria-selected="false" data-p="pSap">Self-healing</button>
+        <button class="tab" role="tab" aria-selected="false" data-p="pCarb">Carbon</button>
+      </div>
+      <div class="pane on" id="pIn">
+        <canvas id="inspGL"></canvas>
+        <div class="row"><label>Separate the layers <b id="vEx"></b></label><input id="ex" type="range" min="0" max="1" step="0.01" value="0.35"></div>
+        <div class="toggles"><button class="chip" id="tCut" aria-pressed="false">Section cut A–A</button><button class="chip" id="tXr" aria-pressed="true">See-through concrete</button></div>
+        <div class="layers">
+          <span class="sw" style="background:#2e9d6b"></span><span><b>Pillar 1</b> · algal substrate in the Ø 300 mm cavity, 100 mm deep</span>
+          <span class="sw" style="background:#d99a2b"></span><span><b>Pillar 2</b> · SAP particles dispersed in the precast body</span>
+          <span class="sw" style="background:#4b5563"></span><span><b>Pillar 3</b> · carbonated aggregate in a CO₂-cured matrix</span>
+          <span class="sw" style="background:#b8c1cc"></span><span>Precast body · 500 mm flat to flat, 200 mm thick, ≈ 87 kg</span>
+          <span class="sw" style="background:#6b7480"></span><span>Anchors into the existing wall, which stays unchanged</span>
+        </div>
+        <div class="kv" id="inspKv" style="margin-top:10px"></div>
+      </div>
+      <div class="pane" id="pSap">
+        <canvas id="sapCv"></canvas>
+        <p class="step" id="sapStep"></p>
+        <div class="toggles"><button class="btn" id="sapPlay">Play the sequence</button><button class="btn ghost" id="sapNext">Next step</button></div>
+        <p class="note">Schematic. SAP particles absorb seawater that enters a crack, swell to block it, then release water that drives further hydration and calcite growth. The crack width that seals reliably is to be measured in the laboratory work package.</p>
+      </div>
+      <div class="pane" id="pCarb">
+        <canvas id="carbCv"></canvas>
+        <div class="kv" id="carbKv" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------------------------------------------------------------- model (exact)
+const S = 0.217, V = 0.03633, PSI = 0.6, NSEG = 12, SEGW = 5;
+const seg = []; // illustrative segment data (chosen for display)
+const EPS_MULT = [1.00,0.95,0,1.05,0.85,1.10,0,0.90,1.00,0.80,1.10,1.15];
+const POLL    = [0.25,0.25,0,0.20,0.30,0.15,0,0.20,0.15,0.20,0.05,0.05];
+const BIO     = [4,4,0,5,3,6,0,5,6,4,9,10];
+const WCAP    = [70,70,0,77,40,77,0,60,77,30,77,77];
+for(let k=0;k<NSEG;k++) seg.push({k, eps:EPS_MULT[k], poll:POLL[k], bio:BIO[k], wcap:WCAP[k], excl:(k===2||k===6), reserve:(k>=10)});
+
+const P = {p1:true,p2:true,p3:true, ci:350,e2:1,e3:0.6,L0:50, al:0.9,ep:0.65,bp:0.2,ga:0,pi:1, t:0, tr:6.5,
+           site:false, auth:false, bud:450, lc:0.6, lb:0.4, le:0.2, I:55, M:0.5, r:0.04, cp:80, colour:'net'};
+
+function fluxPerModule(alpha, epsMult, pollShare){   // kg CO2 / yr, equation (1) annual mean
+  if(!P.p1) return 0;
+  const prod = alpha*365*44/12 * Math.min(1,P.ep*epsMult) * (1 - pollShare);   // g CO2 m-2 yr-1
+  const calc = PSI * 0.44 * P.ga;
+  return S*(prod - calc)/1000;
+}
+const eta2 = () => P.p2 ? P.e2 : 0;
+const eta3 = () => P.p3 ? P.e3 : 0;
+const life = () => P.L0*(1+eta2());
+const embodied = () => P.ci*V*(1-eta3());              // kg CO2 after pillar 3
+function cnet(F,t){ const L=life(); const tt=Math.min(t,L); return P.pi*F*tt - embodied(); }
+function breakEven(F){ return (P.pi*F>0) ? embodied()/(P.pi*F) : Infinity; }
+function segFlux(s, alpha){ return fluxPerModule(alpha===undefined?P.al:alpha, s.eps, s.poll*P.bp/0.2); }
+function lcor(F){
+  const L=Math.floor(life()); let costs=P.I, carb=-embodied();
+  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); costs -= P.M*d; carb += P.pi*F*d; }
+  return carb>0 ? (costs/(carb/1000)) : null;          // EUR per tonne
+}
+function npv(F){
+  const L=Math.floor(life()); let v=-P.I;
+  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); v += d*(P.cp*P.pi*F/1000 + P.M); }
+  return v;
+}
+
+// siting: equal unit cost -> sorting by value is the exact optimum
+let placed = new Array(NSEG).fill(0);
+function solveSiting(){
+  const vals=[]; let cmax=1e-9;
+  const cn = seg.map(s=> s.excl?0: cnet(segFlux(s), life()));
+  cn.forEach(v=>cmax=Math.max(cmax,Math.abs(v)));
+  seg.forEach((s,k)=>{
+    const allowed = !s.excl && (!s.reserve || P.auth);
+    const v = P.lc*(cn[k]/cmax) + P.lb*(s.bio/10) - P.le*0.5;
+    vals.push({k, v, cap: allowed ? Math.min(capPerSeg, s.wcap) : 0});
+  });
+  vals.sort((a,b)=>b.v-a.v);
+  placed = new Array(NSEG).fill(0); let left=P.bud;
+  for(const o of vals){ if(o.v<=0||o.cap===0||left<=0) continue; const n=Math.min(o.cap,left); placed[o.k]=n; left-=n; }
+  const used = P.bud-left;
+  const chosen = vals.filter(o=>placed[o.k]>0).map(o=>'k = '+(o.k+1)+' ('+placed[o.k]+')');
+  $('siteOut').textContent = P.site ? ('Optimum places '+used+' modules: '+(chosen.join(', ')||'none')+'. Fenders at k = 3 and 7 are excluded; k = 11–12 border the nature reserve.') : 'Siting plan off: every eligible hexagon is shown.';
+  return vals;
+}
+
+// ---------------------------------------------------------------- three.js scene
+const canvas=$('gl'), stage=$('stage');
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d1b2c);
+scene.fog=new THREE.Fog(0x0d1b2c,90,220);
+const camera=new THREE.PerspectiveCamera(42,1,0.1,500);
+const controls=new THREE.OrbitControls(camera, canvas);
+controls.enableDamping=true; controls.dampingFactor=0.08; controls.maxPolarAngle=Math.PI*0.62; controls.minDistance=4; controls.maxDistance=160;
+scene.add(new THREE.HemisphereLight(0xcfe3ff,0x1b2a3a,0.85));
+const sun=new THREE.DirectionalLight(0xfff1dc,0.95); sun.position.set(-30,50,40); scene.add(sun);
+
+const WALL_X0=-30, WALL_TOP=3, SEABED=-9;
+// quay wall
+const conc=new THREE.MeshStandardMaterial({color:0x9aa1ab,roughness:0.95});
+const wall=new THREE.Mesh(new THREE.BoxGeometry(NSEG*SEGW+4,WALL_TOP-SEABED,3),conc);
+wall.position.set(0,(WALL_TOP+SEABED)/2,-1.5); scene.add(wall);
+// apron
+const apronMat=new THREE.MeshStandardMaterial({color:0x5d646e,roughness:1});
+const apron=new THREE.Mesh(new THREE.BoxGeometry(NSEG*SEGW+4,0.4,40),apronMat);
+apron.position.set(0,WALL_TOP-0.2,-20); scene.add(apron);
+// cope line
+const cope=new THREE.Mesh(new THREE.BoxGeometry(NSEG*SEGW+4,0.35,0.5),new THREE.MeshStandardMaterial({color:0xd6c25a,roughness:0.7}));
+cope.position.set(0,WALL_TOP+0.17,0.05); scene.add(cope);
+// seabed
+const bed=new THREE.Mesh(new THREE.PlaneGeometry(220,220),new THREE.MeshStandardMaterial({color:0x2a3a3a,roughness:1}));
+bed.rotation.x=-Math.PI/2; bed.position.set(0,SEABED,60); scene.add(bed);
+// reserve marsh beyond segment 12
+const marsh=new THREE.Mesh(new THREE.BoxGeometry(30,0.5,40),new THREE.MeshStandardMaterial({color:0x4e6b3c,roughness:1}));
+marsh.position.set(NSEG*SEGW/2+17,0.2,-6); scene.add(marsh);
+for(let i=0;i<60;i++){const g=new THREE.Mesh(new THREE.ConeGeometry(0.25,1.4,5),new THREE.MeshStandardMaterial({color:0x6f8f4a}));g.position.set(NSEG*SEGW/2+4+Math.random()*26,0.9,-24+Math.random()*36);scene.add(g);}
+
+// fenders and bollards
+const fenderMat=new THREE.MeshStandardMaterial({color:0x1d1f22,roughness:0.8});
+const fenders=[];
+[2,6].forEach(k=>{
+  const cx=WALL_X0+k*SEGW+SEGW/2;
+  [-1.2,1.2].forEach(dx=>{const f=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,6.5,20),fenderMat);f.position.set(cx+dx,-0.6,0.6);scene.add(f);fenders.push(f);});
+});
+for(let k=0;k<=NSEG;k+=2){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.28,0.6,14),new THREE.MeshStandardMaterial({color:0x2b2f35}));b.position.set(WALL_X0+k*SEGW,WALL_TOP+0.3,-0.8);scene.add(b);}
+
+// yard: containers + gantry cranes
+const yard=new THREE.Group(); scene.add(yard);
+const boxGeo=new THREE.BoxGeometry(6,2.6,2.4);
+const palette=[0x1F4E99,0xB7791F,0x2E7D5B,0x8c2f2f,0x6b7280,0x2a6f97,0xc9a227];
+const nC=180, contIM=new THREE.InstancedMesh(boxGeo,new THREE.MeshStandardMaterial({roughness:0.8}),nC);
+{let i=0;const m=new THREE.Matrix4(),c=new THREE.Color();
+ for(let row=0;row<6&&i<nC;row++)for(let col=0;col<9&&i<nC;col++){const h=1+((row*7+col*3)%4);
+  for(let lv=0;lv<h&&i<nC;lv++){m.makeTranslation(-26+col*6.6,WALL_TOP+1.3+lv*2.6,-14-row*3.2);contIM.setMatrixAt(i,m);c.setHex(palette[(row*5+col*3+lv)%palette.length]);contIM.setColorAt(i,c);i++;}}
+ contIM.count=i;}
+yard.add(contIM);
+function crane(x){
+  const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:0xd8dde3,roughness:0.6}),red=new THREE.MeshStandardMaterial({color:0xb5432f,roughness:0.6});
+  [[-6,0],[6,0],[-6,-12],[6,-12]].forEach(([dx,dz])=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.8,26,0.8),mat);l.position.set(x+dx,WALL_TOP+13,-2+dz);g.add(l);});
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(14,1.4,1.4),red);beam.position.set(x,WALL_TOP+26,-2);g.add(beam);
+  const beam2=beam.clone();beam2.position.z=-14;g.add(beam2);
+  const boom=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,48),red);boom.position.set(x,WALL_TOP+27.5,8);g.add(boom);
+  const trolley=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.2,2.4),mat);trolley.position.set(x,WALL_TOP+26.2,14);g.add(trolley);g.userData.trolley=trolley;
+  return g;
+}
+const cranes=[crane(-16),crane(4)]; cranes.forEach(c=>yard.add(c));
+
+// vessel
+const ship=new THREE.Group(); scene.add(ship); ship.visible=false;
+{const hull=new THREE.Mesh(new THREE.BoxGeometry(46,7,11),new THREE.MeshStandardMaterial({color:0x22324a,roughness:0.7}));hull.position.set(-8,-0.5,11.5);ship.add(hull);
+ const band=new THREE.Mesh(new THREE.BoxGeometry(46.1,1.6,11.1),new THREE.MeshStandardMaterial({color:0x8c2f2f}));band.position.set(-8,-3.4,11.5);ship.add(band);
+ const bridge=new THREE.Mesh(new THREE.BoxGeometry(5,7,10),new THREE.MeshStandardMaterial({color:0xe8ebef}));bridge.position.set(10,6.5,11.5);ship.add(bridge);
+ for(let i=0;i<5;i++)for(let j=0;j<3;j++){const c=new THREE.Mesh(new THREE.BoxGeometry(6,2.5,3.2),new THREE.MeshStandardMaterial({color:palette[(i+j*2)%palette.length]}));c.position.set(-28+i*7,4.3+j*0,8.2+j*3.3);ship.add(c);} }
+
+// water
+const WSEG=96, waterGeo=new THREE.PlaneGeometry(240,180,WSEG,WSEG);
+waterGeo.rotateX(-Math.PI/2);
+const water=new THREE.Mesh(waterGeo,new THREE.MeshStandardMaterial({color:0x1d5a6e,roughness:0.25,metalness:0.1,transparent:true,opacity:0.62}));
+water.position.set(0,0,90); scene.add(water);
+const wpos=waterGeo.attributes.position, wbase=Float32Array.from(wpos.array);
+
+// hex modules
+const R=0.5/Math.sqrt(3), GAP=0.012, COLW=0.75*2*R, ROWH=0.5;
+const ZONE_LO=-2.6, ZONE_HI=1.6;
+const cols=Math.floor((SEGW-0.3)/COLW), rows=Math.floor((ZONE_HI-ZONE_LO)/ROWH);
+const capPerSeg = cols*rows;
+const mods=[];
+for(let k=0;k<NSEG;k++){ if(seg[k].excl) continue;
+  const x0=WALL_X0+k*SEGW+0.15+R;
+  for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+    const y=ZONE_LO+0.25+r*ROWH+(c%2?ROWH/2:0); if(y>ZONE_HI-0.2) continue;
+    mods.push({k,c,r,x:x0+c*COLW,y,pull:0,rank:0});
+  }}
+// order inside a segment: lowest rows first when partially filled
+seg.forEach((s,k)=>{const list=mods.filter(m=>m.k===k).sort((a,b)=>(a.r-b.r)||(a.c-b.c));list.forEach((m,i)=>m.rank=i);});
+
+const hexGeo=new THREE.CylinderGeometry(R-GAP,R-GAP,0.2,6,1);hexGeo.rotateX(Math.PI/2);
+const cavGeo=new THREE.CylinderGeometry(0.15,0.15,0.02,28);cavGeo.rotateX(Math.PI/2);
+const hexMat=new THREE.MeshStandardMaterial({roughness:0.85});
+const cavMat=new THREE.MeshStandardMaterial({roughness:0.9});
+const hexIM=new THREE.InstancedMesh(hexGeo,hexMat,mods.length);
+const cavIM=new THREE.InstancedMesh(cavGeo,cavMat,mods.length);
+hexIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);cavIM.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+scene.add(hexIM,cavIM);
+const tmpM=new THREE.Matrix4(), tmpC=new THREE.Color(), cRed=new THREE.Color(0xb3402f), cGrey=new THREE.Color(0x8b929c), cGreen=new THREE.Color(0x2e9d6b), cEol=new THREE.Color(0x55595f);
+const cConc=new THREE.Color(0xa3a9b1), cAlg=new THREE.Color(0x3f9a5e), cPink=new THREE.Color(0xc77c9a);
+let selected=-1, visibleMask=[];
+
+function updateModules(){
+  const t=P.t, L=life();
+  const vals = P.colour==='val' ? solveSiting() : null;
+  const vmap={}; if(vals){let mx=1e-9;vals.forEach(o=>mx=Math.max(mx,Math.abs(o.v)));vals.forEach(o=>vmap[o.k]=o.v/mx);}
+  const segF = seg.map(s=>segFlux(s));
+  let maxAbs=0; seg.forEach((s,k)=>{maxAbs=Math.max(maxAbs,Math.abs(cnet(segF[k],t)));});
+  const cover = Math.min(1, t/6);   // display only
+  mods.forEach((m,i)=>{
+    const show = !P.site || m.rank < placed[m.k];
+    visibleMask[i]=show;
+    const z = 0.1 + m.pull*1.4;
+    const sc = show?1:0.0001;
+    tmpM.makeScale(sc,sc,sc); tmpM.setPosition(m.x, m.y, z); hexIM.setMatrixAt(i,tmpM);
+    tmpM.makeScale(sc,sc,sc); tmpM.setPosition(m.x, m.y, z+0.101); cavIM.setMatrixAt(i,tmpM);
+    if(P.colour==='val'){
+      const v=vmap[m.k]||0; tmpC.copy(cGrey).lerp(v>=0?cGreen:cRed,Math.min(1,Math.abs(v)));
+    } else if(t>L){ tmpC.copy(cEol); }
+    else { const v=cnet(segF[m.k],t), a=Math.min(1,Math.abs(v)/Math.max(maxAbs,1e-6));
+      tmpC.copy(cGrey).lerp(v>=0?cGreen:cRed,0.25+0.75*a); }
+    if(i===selected) tmpC.lerp(new THREE.Color(0xF2B632),0.55);
+    hexIM.setColorAt(i,tmpC);
+    const sub = (m.y < tideLevel) ? 1 : 0.85;
+    tmpC.copy(cConc).lerp(P.p1? ((m.c+m.r)%5===0?cPink:cAlg) : cConc, P.p1?cover*sub:0);
+    cavIM.setColorAt(i,tmpC);
+  });
+  hexIM.instanceMatrix.needsUpdate=true; cavIM.instanceMatrix.needsUpdate=true;
+  if(hexIM.instanceColor) hexIM.instanceColor.needsUpdate=true; if(cavIM.instanceColor) cavIM.instanceColor.needsUpdate=true;
+}
+
+// labels
+const labelBox=$('labels'), labelEls=[];
+seg.forEach((s,k)=>{const d=document.createElement('div');d.className='lbl'+(s.excl?' ex':'')+(s.reserve?' res':'');
+  d.textContent='k = '+(k+1)+(s.excl?' · fenders':'')+(s.reserve?' · reserve':'');labelBox.appendChild(d);labelEls.push(d);});
+const v3=new THREE.Vector3();
+function placeLabels(){
+  const show=$('vLab').getAttribute('aria-pressed')==='true';
+  const w=stage.clientWidth,h=stage.clientHeight;
+  labelEls.forEach((el,k)=>{ if(!show){el.style.display='none';return;}
+    v3.set(WALL_X0+k*SEGW+SEGW/2, WALL_TOP+1.2, 0.3).project(camera);
+    if(v3.z>1){el.style.display='none';return;}
+    el.style.display='block'; el.style.left=((v3.x+1)/2*w)+'px'; el.style.top=((1-v3.y)/2*h)+'px'; });
+}
+
+// camera presets
+function camTo(px,py,pz,tx,ty,tz){ camera.position.set(px,py,pz); controls.target.set(tx,ty,tz); controls.update(); }
+const presets={A:[30,11,36,-2,-0.5,0],B:[-6,1.5,13,-6,-0.5,0],C:[18,-1,24,4,-0.8,0]};
+camTo(...presets.A);
+
+// raycast picking
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2(); let downXY=null;
+canvas.addEventListener('pointerdown',e=>{downXY=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{
+  if(!downXY) return; const moved=Math.hypot(e.clientX-downXY[0],e.clientY-downXY[1]); downXY=null; if(moved>5) return;
+  const rect=canvas.getBoundingClientRect(); mouse.set(((e.clientX-rect.left)/rect.width)*2-1, -((e.clientY-rect.top)/rect.height)*2+1);
+  camera.updateMatrixWorld(); ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects([hexIM,cavIM]);
+  const hit=hits.find(h=>visibleMask[h.instanceId]);
+  if(hit) openInspector(hit.instanceId);
+});
+
+// tide + animation
+let tideLevel=0, playing=false, last=performance.now(), clockT=0;
+function animate(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now; clockT+=dt;
+  if(playing){ P.t=Math.min(120,P.t+dt*P.sp*1); if(P.t>=120) setPlaying(false); $('yr').value=P.t; refreshNumbers(false); }
+  // tide: semi-diurnal display cycle
+  tideLevel = -0.5 + (P.tr/2)*Math.sin(clockT*0.35) * 0.55;
+  water.position.y=tideLevel;
+  if(!reduced){ for(let i=0;i<wpos.count;i++){const x=wbase[i*3],z=wbase[i*3+2];wpos.array[i*3+1]=0.12*Math.sin(x*0.25+clockT*1.3)+0.08*Math.cos(z*0.3+clockT*0.9);} wpos.needsUpdate=true; }
+  cranes.forEach((c,i)=>{c.userData.trolley.position.z=8+10*Math.sin(clockT*0.25+i*2);});
+  // pull animation
+  mods.forEach((m,i)=>{const target=(i===selected)?1:0; if(Math.abs(m.pull-target)>0.001){m.pull+= (target-m.pull)*Math.min(1,dt*6); needUpdate=true;}});
+  if(needUpdate){ updateModules(); needUpdate=false; }
+  if($('vRot').getAttribute('aria-pressed')==='true') { controls.autoRotate=true; controls.autoRotateSpeed=0.6; } else controls.autoRotate=false;
+  controls.update(); renderer.render(scene,camera); placeLabels();
+  if(inspOpen) renderInspector(dt);
+  requestAnimationFrame(animate);
+}
+let needUpdate=true;
+
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); drawBE(); drawPost(); }
+window.addEventListener('resize',resize);
+
+// ---------------------------------------------------------------- UI wiring
+const fmt=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('en-GB',{maximumFractionDigits:d,minimumFractionDigits:d}):'–';
+const sliders={ci:['ci','vCi',v=>v+' kg CO₂ m⁻³'],e2:['e2','vE2',v=>fmt(+v,2)],e3:['e3','vE3',v=>fmt(+v,2)],L0:['L0','vL0',v=>v+' yr'],
+  al:['al','vA',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['ep','vEp',v=>fmt(+v,2)],bp:['bp','vBp',v=>fmt(+v,2)],ga:['ga','vG',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['pi','vPi',v=>fmt(+v,2)],
+  t:['yr','vT',v=>fmt(+v,1)],sp:['sp','vSp',v=>v+' yr/s'],tr:['tr','vTr',v=>fmt(+v,1)+' m'],bud:['bud','vBud',v=>v],lc:['lc','vLc',v=>fmt(+v,2)],lb:['lb','vLb',v=>fmt(+v,2)],le:['le','vLe',v=>fmt(+v,2)],
+  I:['cap','vI',v=>'€'+v],M:['ma','vMa',v=>'€'+fmt(+v,1)+'/yr'],r:['rr','vR',v=>fmt(v*100,1)+'%'],cp:['cp','vP',v=>'€'+v+'/t'],
+  m:['pm','vM',v=>v],s0:['s0','vS0',v=>fmt(+v,2)],se:['se','vSe',v=>fmt(+v,2)]};
+P.sp=6; P.m=12; P.s0=0.8; P.se=0.5;
+Object.entries(sliders).forEach(([key,[id,vid,f]])=>{
+  const el=$(id); const upd=()=>{P[key]=parseFloat(el.value); $(vid).textContent=f(el.value); refreshNumbers(true);};
+  el.addEventListener('input',upd); $(vid).textContent=f(el.value);
+});
+function toggle(id,fn){const b=$(id);b.addEventListener('click',()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);fn(on);});}
+toggle('tP1',v=>{P.p1=v;refreshNumbers(true);}); toggle('tP2',v=>{P.p2=v;refreshNumbers(true);}); toggle('tP3',v=>{P.p3=v;refreshNumbers(true);});
+toggle('tSite',v=>{P.site=v;refreshNumbers(true);}); toggle('tAuth',v=>{P.auth=v;refreshNumbers(true);});
+toggle('vShip',v=>{ship.visible=v;}); toggle('vYard',v=>{yard.visible=v;}); toggle('vLab',()=>{}); toggle('vRot',()=>{});
+$('preFC').onclick=()=>{$('e3').value=0.15;$('e3').dispatchEvent(new Event('input'));};
+$('preGC').onclick=()=>{$('e3').value=0.6;$('e3').dispatchEvent(new Event('input'));};
+function setColour(c){P.colour=c;$('cNet').setAttribute('aria-pressed',c==='net');$('cVal').setAttribute('aria-pressed',c==='val');
+  document.querySelector('#legend div').textContent = c==='net'?'Net carbon of each module at the current year':'Siting value of each segment (equation 7)';
+  document.querySelector('#legend .ends').innerHTML = c==='net'?'<span>repaying concrete</span><span>net sink</span>':'<span>negative value</span><span>highest value</span>';
+  refreshNumbers(true);}
+$('cNet').onclick=()=>setColour('net'); $('cVal').onclick=()=>setColour('val');
+$('camA').onclick=()=>camTo(...presets.A); $('camB').onclick=()=>camTo(...presets.B); $('camC').onclick=()=>camTo(...presets.C);
+function setPlaying(v){playing=v;$('play').textContent=v?'Pause':'Play';$('play').setAttribute('aria-label',v?'Pause':'Play');}
+$('play').onclick=()=>{ if(P.t>=120){P.t=0;$('yr').value=0;} setPlaying(!playing); };
+$('menuBtn').onclick=()=>$('side').classList.toggle('open');
+$('themeBtn').onclick=()=>{const r=document.documentElement;const cur=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');r.setAttribute('data-theme',cur==='dark'?'light':'dark');drawBE();drawPost();drawCarb();};
+
+function refreshNumbers(full){
+  $('vT').textContent=fmt(P.t,1); $('yrBadge').textContent='Year '+fmt(P.t,1); $('rYr').textContent=fmt(P.t,1);
+  solveSiting();
+  let N=0, net=0, ann=0;
+  mods.forEach(m=>{ if(P.site && m.rank>=placed[m.k]) return; const F=segFlux(seg[m.k]); N++; net+=cnet(F,P.t); ann+= (P.t<=life()? P.pi*F:0); });
+  const Fref=segFlux({eps:1,poll:0.2});
+  $('rN').textContent=N.toLocaleString('en-GB');
+  $('rNet').textContent=fmt(net/1000,2)+' t CO₂';
+  $('rNet').style.color = net>=0?'var(--algae)':'var(--emit)';
+  $('rAnn').textContent=fmt(ann/1000,3)+' t CO₂/yr';
+  const be=breakEven(Fref); $('rBe').textContent = Number.isFinite(be)? fmt(be,0)+' yr'+(be>life()?' (after end of life)':'') : 'never';
+  $('rBe').style.color = (Number.isFinite(be)&&be<=life())?'var(--algae)':'var(--emit)';
+  $('rL').textContent=fmt(life(),0)+' yr';
+  const lc=lcor(Fref); $('lcor').textContent = lc===null?'undefined: net emitter':'€'+fmt(lc,0)+' per t CO₂';
+  const nv=npv(Fref); $('npv').textContent=(nv<0?'−€':'€')+fmt(Math.abs(nv),2);
+  needUpdate=true; drawBE(); if(full) drawPost(); if(inspOpen) fillInspector();
+  updatePriorProb();
+}
+
+// ---------------------------------------------------------------- mini charts
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function prep(cv){const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);cv.width=Math.max(10,r.width*d);cv.height=Math.max(10,r.height*d);const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);return [g,r.width,r.height];}
+function drawBE(){
+  const cv=$('beCv'); if(!cv.offsetParent) return; const [g,w,h]=prep(cv); g.clearRect(0,0,w,h);
+  const F=segFlux({eps:1,poll:0.2}), L=life(), T=120;
+  const ys=[]; for(let t=0;t<=T;t+=1) ys.push(cnet(F,t));
+  let lo=Math.min(...ys,-1), hi=Math.max(...ys,1); const pad=6, X=t=>pad+28+(w-pad-36)*t/T, Y=v=>pad+(h-2*pad-12)*(1-(v-lo)/(hi-lo));
+  g.font='10px Public Sans, sans-serif'; g.fillStyle=css('--muted');
+  g.strokeStyle=css('--line'); g.lineWidth=1; g.beginPath(); g.moveTo(X(0),Y(0)); g.lineTo(X(T),Y(0)); g.stroke();
+  g.fillText('0',4,Y(0)+3); g.fillText(fmt(hi,0),4,Y(hi)+8); g.fillText(fmt(lo,0),4,Y(lo));
+  [0,40,80,120].forEach(t=>g.fillText(t+' yr',X(t)-8,h-2));
+  g.setLineDash([3,3]); g.strokeStyle=css('--sap'); g.beginPath(); g.moveTo(X(L),pad); g.lineTo(X(L),h-14); g.stroke(); g.setLineDash([]);
+  g.lineWidth=2; g.beginPath(); ys.forEach((v,i)=>{const x=X(i),y=Y(v); i?g.lineTo(x,y):g.moveTo(x,y);}); g.strokeStyle=css('--blue'); g.stroke();
+  const be=breakEven(F); if(Number.isFinite(be)&&be<=T){g.fillStyle=css('--algae');g.beginPath();g.arc(X(be),Y(0),3.5,0,7);g.fill();}
+  g.fillStyle=css('--gold'); g.beginPath(); g.arc(X(P.t),Y(cnet(F,P.t)),4,0,7); g.fill();
+  g.fillStyle=css('--muted'); g.fillText('kg CO₂ per module · dashed: end of life',X(0)+4,pad+8);
+}
+
+// Bayesian pilot (equations 9–10)
+let pilot=null;
+const normCdf=x=>{const t=1/(1+0.2316419*Math.abs(x));const d=0.3989423*Math.exp(-x*x/2);const p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;};
+function alphaBreak(){ // alpha such that module breaks even exactly at L (reference segment)
+  const need=embodied()/(P.pi*life()); // kg CO2/yr needed
+  if(!P.p1) return Infinity;
+  const k=S*365*44/12*Math.min(1,P.ep)*(1-0.2*P.bp/0.2)/1000; // kg per (g C m-2 d-1)
+  const calc=S*PSI*0.44*P.ga/1000;
+  return (need+calc)/k;
+}
+function probSink(mu,sd){ const ab=alphaBreak(); if(!Number.isFinite(ab)) return 0; if(ab<=0) return 1; return 1-normCdf((Math.log(ab)-mu)/sd); }
+function updatePriorProb(){ $('pPrior').textContent=fmt(100*probSink(Math.log(P.al),P.s0),0)+'%'; if(pilot){ $('pPost').textContent=fmt(100*probSink(pilot.mu1,pilot.s1),0)+'%'; } }
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+$('runPilot').onclick=()=>{
+  const mu0=Math.log(P.al), s0=P.s0, se=P.se, m=P.m;
+  const truth=mu0+s0*gauss(); const ys=[]; for(let j=0;j<m;j++) ys.push(truth+se*gauss());
+  const s1=Math.sqrt(1/(1/(s0*s0)+m/(se*se))); const mu1=s1*s1*(mu0/(s0*s0)+ys.reduce((a,b)=>a+b,0)/(se*se));
+  pilot={mu0,s0,mu1,s1,truth,ys}; $('aPost').textContent=fmt(Math.exp(mu1),2)+' g C m⁻² d⁻¹ (true '+fmt(Math.exp(truth),2)+')';
+  updatePriorProb(); drawPost();
+};
+$('resetPilot').onclick=()=>{pilot=null;$('pPost').textContent='–';$('aPost').textContent='–';drawPost();};
+function drawPost(){
+  const cv=$('postCv'); if(!cv.offsetParent) return; const [g,w,h]=prep(cv); g.clearRect(0,0,w,h);
+  const lo=Math.log(0.03), hi=Math.log(20), X=v=>10+(w-20)*(v-lo)/(hi-lo);
+  const pdf=(x,m,s)=>Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));
+  const mu0=Math.log(P.al), s0=P.s0; const curves=[[mu0,s0,css('--muted')]]; if(pilot) curves.push([pilot.mu1,pilot.s1,css('--blue')]);
+  let ymax=0; curves.forEach(([m,s])=>{ymax=Math.max(ymax,pdf(m,m,s));});
+  const Y=v=>h-18-(h-34)*v/ymax;
+  const ab=alphaBreak(); if(Number.isFinite(ab)&&ab>0){const xa=X(Math.log(ab)); g.fillStyle='rgba(46,157,107,.12)'; g.fillRect(xa,8,w-10-xa,h-26); g.fillStyle=css('--algae'); g.font='10px Public Sans, sans-serif'; g.fillText('net sink over life →',Math.min(xa+4,w-110),18);}
+  curves.forEach(([m,s,c])=>{g.beginPath();for(let i=0;i<=200;i++){const x=lo+(hi-lo)*i/200;const px=X(x),py=Y(pdf(x,m,s));i?g.lineTo(px,py):g.moveTo(px,py);}g.strokeStyle=c;g.lineWidth=2;g.stroke();});
+  if(pilot){ g.fillStyle=css('--gold'); pilot.ys.forEach(y=>{g.beginPath();g.arc(X(y),h-22,2.5,0,7);g.fill();}); g.strokeStyle=css('--emit'); g.setLineDash([3,3]); g.beginPath(); g.moveTo(X(pilot.truth),8); g.lineTo(X(pilot.truth),h-18); g.stroke(); g.setLineDash([]); }
+  g.fillStyle=css('--muted'); g.font='10px Public Sans, sans-serif';
+  [0.1,1,10].forEach(v=>g.fillText(v+'',X(Math.log(v))-5,h-4)); g.fillText('α, g C m⁻² d⁻¹ (log)',w-112,h-4);
+  g.fillText(pilot?'grey prior · blue posterior · dots data · red true':'grey: prior on α',12,12);
+}
+
+// ---------------------------------------------------------------- inspector
+let inspOpen=false, iR=null, iScene, iCam, iGroup, layers={}, clipPlane, iCtl;
+function buildInspector(){
+  const cv=$('inspGL'); iR=new THREE.WebGLRenderer({canvas:cv,antialias:true}); iR.setPixelRatio(Math.min(2,window.devicePixelRatio)); iR.localClippingEnabled=true;
+  iScene=new THREE.Scene(); iScene.background=new THREE.Color(0x0f1d2e);
+  iCam=new THREE.PerspectiveCamera(35,1,0.01,20); iCam.position.set(0.75,0.45,1.15);
+  iCtl=new THREE.OrbitControls(iCam,cv); iCtl.enableDamping=true; iCtl.target.set(0,0,0);
+  iScene.add(new THREE.HemisphereLight(0xffffff,0x334455,0.9)); const dl=new THREE.DirectionalLight(0xffffff,0.8); dl.position.set(1,2,2); iScene.add(dl);
+  clipPlane=new THREE.Plane(new THREE.Vector3(0,-1,0),0);
+  iGroup=new THREE.Group(); iScene.add(iGroup);
+  // body: hexagonal prism with circular recess (lathe-free: use ExtrudeGeometry with hole)
+  const sh=new THREE.Shape(); for(let i=0;i<6;i++){const a=i*Math.PI/3; const x=0.2887*Math.cos(a), y=0.2887*Math.sin(a); i?sh.lineTo(x,y):sh.moveTo(x,y);} sh.closePath();
+  const back=new THREE.ExtrudeGeometry(sh,{depth:0.1,bevelEnabled:false}); back.translate(0,0,-0.1);
+  const front=sh.clone(); const hole=new THREE.Path(); hole.absarc(0,0,0.15,0,Math.PI*2,true); front.holes.push(hole);
+  const frontG=new THREE.ExtrudeGeometry(front,{depth:0.1,bevelEnabled:false,curveSegments:40});
+  const bodyMat=new THREE.MeshStandardMaterial({color:0xb8c1cc,roughness:0.9,transparent:true,opacity:0.35,side:THREE.DoubleSide,clippingPlanes:[clipPlane],clipShadows:true,depthWrite:false});
+  const body=new THREE.Group(); body.add(new THREE.Mesh(back,bodyMat)); body.add(new THREE.Mesh(frontG,bodyMat)); iGroup.add(body); layers.body=body; layers.bodyMat=bodyMat;
+  // SAP particles and carbonated aggregate inside body
+  const sapG=new THREE.SphereGeometry(0.008,8,6), aggG=new THREE.DodecahedronGeometry(0.014,0);
+  const sapIM=new THREE.InstancedMesh(sapG,new THREE.MeshStandardMaterial({color:0xd99a2b,clippingPlanes:[clipPlane]}),260);
+  const aggIM=new THREE.InstancedMesh(aggG,new THREE.MeshStandardMaterial({color:0x4b5563,roughness:1,clippingPlanes:[clipPlane]}),200);
+  const inside=(x,y)=>{const ax=Math.abs(x),ay=Math.abs(y);return ay<=0.25-0.02 && (ax*0.866+ay*0.5)<=0.25-0.02;};
+  const m=new THREE.Matrix4(); let si=0,ai=0, seed=7; const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  const sapPts=[], aggPts=[];
+  while(si<260||ai<200){const x=(rnd()-0.5)*0.56,y=(rnd()-0.5)*0.56,z=-0.1+rnd()*0.2; if(!inside(x,y)) continue; const inCav=(x*x+y*y<0.155*0.155 && z>0); if(inCav) continue;
+    if(si<260&&rnd()<0.6){sapPts.push([x,y,z]);si++;} else if(ai<200){aggPts.push([x,y,z]);ai++;}}
+  layers.sap={im:sapIM,pts:sapPts}; layers.agg={im:aggIM,pts:aggPts}; iGroup.add(sapIM,aggIM);
+  // substrate + algae
+  const sub=new THREE.Group();
+  const disk=new THREE.Mesh(new THREE.CylinderGeometry(0.148,0.148,0.1,40).rotateX(Math.PI/2),new THREE.MeshStandardMaterial({color:0xd9cfb8,roughness:1,clippingPlanes:[clipPlane]}));
+  disk.position.z=0.05; sub.add(disk);
+  const algM=new THREE.MeshStandardMaterial({color:0x3f9a5e,roughness:0.8,clippingPlanes:[clipPlane]}), pinkM=new THREE.MeshStandardMaterial({color:0xc77c9a,roughness:0.8,clippingPlanes:[clipPlane]});
+  for(let i=0;i<70;i++){const a=rnd()*Math.PI*2,rr=Math.sqrt(rnd())*0.13; const tuft=new THREE.Mesh(new THREE.ConeGeometry(0.008,0.03+rnd()*0.04,5).rotateX(Math.PI/2),i%4?algM:pinkM);
+    tuft.position.set(rr*Math.cos(a),rr*Math.sin(a),0.12+rnd()*0.01); sub.add(tuft);}
+  iGroup.add(sub); layers.sub=sub;
+  // anchors
+  const anc=new THREE.Group(); [-0.17,0.17].forEach(x=>{const a=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.28,10).rotateX(Math.PI/2),new THREE.MeshStandardMaterial({color:0x6b7480,metalness:0.6,roughness:0.4}));a.position.set(x,0,-0.12);anc.add(a);});
+  iGroup.add(anc); layers.anc=anc;
+  // ghost wall plate behind
+  const plate=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.65,0.04),new THREE.MeshStandardMaterial({color:0x5d646e,transparent:true,opacity:0.5}));plate.position.z=-0.3;iGroup.add(plate);layers.plate=plate;
+  // CO2 particles flowing into face
+  const co2=new THREE.InstancedMesh(new THREE.SphereGeometry(0.006,6,5),new THREE.MeshBasicMaterial({color:0xbfe6ff,transparent:true,opacity:0.8}),60);
+  layers.co2={im:co2,ph:[...Array(60)].map(()=>[rnd(),(rnd()-0.5)*0.3,(rnd()-0.5)*0.3])}; iGroup.add(co2);
+  iGroup.rotation.x=-0.25;
+}
+function layoutInspector(){
+  const e=parseFloat($('ex').value); $('vEx').textContent=Math.round(e*100)+'%';
+  layers.sub.position.z=0.22*e; layers.anc.position.z=-0.18*e; layers.plate.position.z=-0.3-0.15*e;
+  const m=new THREE.Matrix4(), s=1+2.2*e;
+  layers.sap.pts.forEach((p,i)=>{m.makeScale(s,s,s);m.setPosition(p[0],p[1],p[2]);layers.sap.im.setMatrixAt(i,m);}); layers.sap.im.instanceMatrix.needsUpdate=true;
+  layers.agg.pts.forEach((p,i)=>{m.makeScale(1,1,1);m.setPosition(p[0],p[1],p[2]);layers.agg.im.setMatrixAt(i,m);}); layers.agg.im.instanceMatrix.needsUpdate=true;
+  layers.sap.im.visible=P.p2; layers.agg.im.visible=P.p3; layers.sub.visible=P.p1;
+  const xr=$('tXr').getAttribute('aria-pressed')==='true'; layers.bodyMat.opacity=xr?0.33:1; layers.bodyMat.depthWrite=!xr;
+  clipPlane.constant = $('tCut').getAttribute('aria-pressed')==='true' ? 0 : 10;
+}
+let iT=0;
+function renderInspector(dt){
+  const cv=$('inspGL'); if(!cv.offsetParent) return;
+  const w=cv.clientWidth,h=cv.clientHeight; if(iR.domElement.width!==Math.floor(w*iR.getPixelRatio())){iR.setSize(w,h,false);iCam.aspect=w/h;iCam.updateProjectionMatrix();}
+  iT+=dt; const m=new THREE.Matrix4(); const on=P.p1&&P.t<=life();
+  layers.co2.im.visible=on;
+  layers.co2.ph.forEach((p,i)=>{const ph=(p[0]+iT*0.25)%1; m.makeTranslation(p[1],p[2],0.55-0.45*ph); layers.co2.im.setMatrixAt(i,m);}); layers.co2.im.instanceMatrix.needsUpdate=true;
+  iCtl.update(); iR.render(iScene,iCam);
+}
+function fillInspector(){
+  if(selected<0) return; const md=mods[selected], s=seg[md.k], F=segFlux(s), L=life(), E=embodied(), be=breakEven(F);
+  $('inspTitle').textContent='Module k = '+(md.k+1)+', column '+(md.c+1)+', row '+(md.r+1);
+  const absorbed=P.pi*F*Math.min(P.t,L);
+  const kv=[['Colonisable face S','0.217 m²'],['Mass','≈ 87 kg'],['Segment exposure ε','×'+fmt(s.eps,2)],['Segment pollution','×'+fmt(s.poll/0.2,2)],
+    ['Net flux F','<b>'+fmt(F,3)+' kg CO₂/yr</b>'],['Embodied carbon E(1 − η₃)',fmt(E,2)+' kg CO₂'],['Absorbed by year '+fmt(P.t,0),fmt(absorbed,2)+' kg CO₂'],
+    ['Net so far',fmt(cnet(F,P.t),2)+' kg CO₂'],['Break-even year',Number.isFinite(be)?fmt(be,0)+' yr':'never'],['Service life L',fmt(L,0)+' yr'],['Position on the wall',(md.y<tideLevel?'under water now':'emersed now')]];
+  $('inspKv').innerHTML=kv.map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
+  $('carbKv').innerHTML=kv.slice(4,10).map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join('');
+  drawCarb();
+}
+function drawCarb(){
+  const cv=$('carbCv'); if(!cv.offsetParent||selected<0) return; const [g,w,h]=prep(cv); g.clearRect(0,0,w,h);
+  const md=mods[selected], F=segFlux(seg[md.k]), L=life(), E0=P.ci*V, E=embodied(), abs=P.pi*F*Math.min(P.t,L), lifeAbs=P.pi*F*L;
+  const bars=[['Concrete without pillar 3',E0,css('--muted')],['Embodied after pillar 3',E,css('--mix')],['Absorbed so far',abs,css('--algae')],['Absorbed over the full life',lifeAbs,css('--blue')]];
+  const mx=Math.max(...bars.map(b=>Math.abs(b[1])),1); g.font='11px Public Sans, sans-serif';
+  bars.forEach((b,i)=>{const y=12+i*42; g.fillStyle=css('--muted'); g.fillText(b[0]+' · '+fmt(b[1],2)+' kg CO₂',8,y+10);
+    g.fillStyle=b[2]; g.fillRect(8,y+16,Math.max(1,(w-16)*Math.max(0,b[1])/mx),12);});
+}
+function openInspector(i){
+  if(!iR) buildInspector();
+  selected=i; inspOpen=true; $('insp').classList.add('open'); $('readout').style.display='none'; fillInspector(); layoutInspector(); needUpdate=true;
+}
+function closeInspector(){ inspOpen=false; selected=-1; $('insp').classList.remove('open'); $('readout').style.display=''; needUpdate=true; sapStop(); }
+$('inspClose').onclick=closeInspector;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&inspOpen) closeInspector();});
+$('ex').addEventListener('input',layoutInspector);
+toggle('tCut',layoutInspector); toggle('tXr',layoutInspector);
+document.querySelectorAll('.tab').forEach(tb=>tb.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===tb));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===tb.dataset.p));
+  if(tb.dataset.p==='pSap') drawSap(); if(tb.dataset.p==='pCarb') drawCarb();
+});
+
+// ---------------------------------------------------------------- SAP self-healing demonstration (schematic)
+const SAP_STEPS=['1 · Intact concrete. Dry SAP particles (amber) sit in the matrix next to the aggregate.',
+ '2 · A crack opens under load or thermal cycling and reaches the surface.',
+ '3 · Seawater enters the crack and would carry chlorides towards any reinforcement.',
+ '4 · SAP particles on the crack faces absorb the water, swell and block the crack.',
+ '5 · Stored water is released slowly: unhydrated cement and calcite grow in the crack (white).',
+ '6 · The crack is sealed. Service life is extended, which is the η₂ of the model.'];
+let sapK=0, sapTimer=null, sapAnim=0;
+const sapRand=(()=>{let s=11;return()=>{s=(s*16807)%2147483647;return s/2147483647;};})();
+const sapAgg=[...Array(26)].map(()=>[sapRand(),sapRand(),6+sapRand()*12]);
+const sapPar=[...Array(18)].map((_,i)=>[0.35+((i%2)?0.09:-0.09)+(sapRand()-0.5)*0.06, 0.08+0.84*(i/18), 3+sapRand()*2]);
+function drawSap(){
+  const cv=$('sapCv'); if(!cv.offsetParent) return; const [g,w,h]=prep(cv); g.clearRect(0,0,w,h);
+  const k=sapK, a=sapAnim;
+  g.fillStyle='#2a6f97'; g.fillRect(0,0,w*0.12,h); g.fillStyle='#cfe6f2'; g.font='11px Public Sans, sans-serif'; g.save(); g.translate(w*0.06,h/2); g.rotate(-Math.PI/2); g.fillText('seawater',-22,4); g.restore();
+  g.fillStyle='#b8c1cc'; g.fillRect(w*0.12,0,w*0.88,h);
+  sapAgg.forEach(([x,y,r])=>{g.fillStyle='#8f98a3'; g.beginPath(); g.ellipse(w*(0.15+0.82*x),h*y,r,r*0.7,x*3,0,7); g.fill();});
+  // crack path
+  const crack=[]; for(let i=0;i<=24;i++){const y=h*i/24; const x=w*0.12+w*0.55*(1-i/24)*0+ (w*0.12 + (w*0.5)*(i/24)) ; crack.push([w*0.12+ (w*0.48)*(i/24)+ Math.sin(i*1.7)*6, h*0.5+ Math.sin(i*0.9)*h*0.06 + (i-12)*0]);}
+  const open = k===0?0 : k===1?a : k>=5? Math.max(0,1-a)*0.15 : 1;
+  const width= 7*open;
+  if(width>0.1){ g.strokeStyle='#3b4450'; g.lineWidth=width; g.lineJoin='round'; g.beginPath(); crack.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.stroke(); }
+  if(k>=2 && k<5){ const reach = k===2? a : 1; g.strokeStyle='#4aa3d6'; g.lineWidth=Math.max(1,width-2); g.beginPath(); crack.slice(0,Math.max(2,Math.floor(24*reach))).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.stroke(); }
+  if(k>=4){ const fill = k===4? a*0.6 : (k===5? 0.6+0.4*a : 1); g.strokeStyle='rgba(245,245,240,'+(k===4?0.3:0.9)+')'; g.lineWidth=k===4?2:Math.max(2,7*fill); g.beginPath(); crack.slice(0,Math.max(2,Math.floor(24*(k===4?a:1)))).forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.stroke(); }
+  sapPar.forEach(([fx,fy,r],i)=>{ const idx=Math.min(24,Math.floor(fy*24)); const [cx,cy]=crack[idx]; const off=(i%2?1:-1)*(10+r);
+    const near=true; let sw=1; if(k===3) sw=1; if(k===4) sw=1+1.6*a; if(k>=5) sw=2.6-1.0*(k===5?a:1);
+    g.fillStyle=k>=4?'rgba(217,154,43,.85)':'#d99a2b'; g.beginPath(); g.arc(cx+off*0.6,cy+off*0.5,r*sw,0,7); g.fill(); });
+  g.fillStyle='#14202e'; g.font='600 11px Public Sans, sans-serif'; g.fillText('section through the module face (schematic)',w*0.14,14);
+  $('sapStep').textContent=SAP_STEPS[k];
+}
+function sapStop(){ if(sapTimer){cancelAnimationFrame(sapTimer);sapTimer=null;} }
+function sapRun(fromStart){
+  sapStop(); if(fromStart){sapK=0;} sapAnim=0; let t0=performance.now();
+  const tick=now=>{ sapAnim=Math.min(1,(now-t0)/1400); drawSap(); if(sapAnim>=1){ if(playAll && sapK<5){ sapK++; t0=now; sapAnim=0; } else { sapTimer=null; return; } } sapTimer=requestAnimationFrame(tick); };
+  sapTimer=requestAnimationFrame(tick);
+}
+let playAll=false;
+$('sapPlay').onclick=()=>{playAll=true; sapRun(true);};
+$('sapNext').onclick=()=>{playAll=false; sapK=(sapK+1)%6; sapRun(false);};
+
+// ---------------------------------------------------------------- start
+resize(); refreshNumbers(true); drawSap();
+requestAnimationFrame(t=>{last=t;animate(t);});
+if(!reduced){ setTimeout(()=>{ if(!playing && P.t===0) setPlaying(true); },1500); }
+})();
+</script>
+</body>
+</html>
