@@ -153,13 +153,15 @@ canvas.mini{width:100%;height:150px;display:block;background:var(--panel-2);bord
     <details>
       <summary><span class="dot" style="background:var(--algae)"></span>Biology on the face</summary>
       <div class="sec">
-        <div class="row"><label>Net production α <b id="vA"></b></label><input id="al" type="range" min="0.07" max="5" step="0.01" value="0.9"></div>
+        <div class="row"><label>Net production α <b id="vA"></b></label><input id="al" type="range" min="0.07" max="5" step="0.001" value="0.904"></div>
         <div class="row"><label>Light, temperature, emersion ε <b id="vEp"></b></label><input id="ep" type="range" min="0.1" max="1" step="0.01" value="0.65"></div>
         <div class="row"><label>Pollution penalty βP <b id="vBp"></b></label><input id="bp" type="range" min="0" max="0.6" step="0.01" value="0.2"></div>
-        <div class="row"><label>Calcification γ <b id="vG"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="0"></div>
+        <div class="row"><label>Calcification γ <b id="vG"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="900"></div>
         <div class="row"><label>Permanence share π <b id="vPi"></b></label><input id="pi" type="range" min="0.1" max="1" step="0.01" value="1"></div>
-        <div class="eq">F = S·[α·ε·(1 − βP) − ψ·0.44·γ], &nbsp; ψ = 0.6</div>
-        <p class="note">α range 0.07–5 g C m⁻² d⁻¹ and median 0.9 from van der Heijden &amp; Kamenos (2015). Calcification is charged against the flux, not added to it.</p>
+        <div class="row"><label>Colonised share of the flat face φ <b id="vPh"></b></label><input id="ph" type="range" min="0" max="1" step="0.01" value="1"></div>
+        <div class="row"><label>Colonisation time constant τ<sub>c</sub> <b id="vTc"></b></label><input id="tc" type="range" min="0" max="20" step="0.5" value="10"></div>
+        <div class="eq">F = S·[α·ε·(1 − βP) − ψ·0.44·γ]·(1 − e<sup>−t/τc</sup>), &nbsp; S = A<sub>cav</sub> + φ·A<sub>face</sub></div>
+        <p class="note">α range 0.07–5 g C m⁻² d⁻¹; defaults 330 g C and 900 g CaCO₃ m⁻² yr⁻¹ from van der Heijden &amp; Kamenos (2015). Calcification is charged against the flux, not added to it.</p>
       </div>
     </details>
 
@@ -266,7 +268,7 @@ canvas.mini{width:100%;height:150px;display:block;background:var(--panel-2);bord
       </div>
       <canvas class="mini" id="beCv" style="margin-top:10px;height:120px" aria-label="Net carbon of one module over time"></canvas>
     </section>
-    <div id="truth"><b>Exact:</b> each module evaluates equations (1) and (3)–(6) of the proposal with the parameters on the left; break-even year = E(1 − η₃) / (πF); the siting plan is the exact optimum of the integer programme (7)–(8) because every module has the same unit cost; the posterior is equation (10). <b>Chosen for display:</b> wall geometry, segment exposure and biodiversity scores, the tide, seasonal shimmer, algae cover, the hidden pilot α, the self-healing animation and all colours.</div>
+    <div id="truth"><b>Exact:</b> each module evaluates equations (1) and (3)–(6) of the proposal with the parameters on the left; the break-even year solves πF[t − τ<sub>c</sub>(1 − e<sup>−t/τc</sup>)] = E(1 − η₃), equation (5); the siting plan is the exact optimum of the integer programme (7)–(8) because every module has the same unit cost; the posterior is equation (10). <b>Chosen for display:</b> wall geometry, segment exposure and biodiversity scores, the tide, seasonal shimmer, algae cover, the hidden pilot α, the self-healing animation and all colours.</div>
 
     <div id="insp" role="dialog" aria-modal="false" aria-labelledby="inspTitle">
       <header><h3 id="inspTitle">Module</h3><button class="x" id="inspClose" aria-label="Close and put the module back">×</button></header>
@@ -319,30 +321,33 @@ const BIO     = [4,4,0,5,3,6,0,5,6,4,9,10];
 const WCAP    = [70,70,0,77,40,77,0,60,77,30,77,77];
 for(let k=0;k<NSEG;k++) seg.push({k, eps:EPS_MULT[k], poll:POLL[k], bio:BIO[k], wcap:WCAP[k], excl:(k===2||k===6), reserve:(k>=10)});
 
-const P = {p1:true,p2:true,p3:true, ci:350,e2:1,e3:0.6,L0:50, al:0.9,ep:0.65,bp:0.2,ga:0,pi:1, t:0, tr:6.5,
+const P = {p1:true,p2:true,p3:true, ci:350,e2:1,e3:0.6,L0:50, al:0.904,ep:0.65,bp:0.2,ga:900,pi:1,ph:1,tc:10, t:0, tr:6.5,
            site:false, auth:false, bud:450, lc:0.6, lb:0.4, le:0.2, I:55, M:0.5, r:0.04, cp:80, colour:'net'};
 
 function fluxPerModule(alpha, epsMult, pollShare){   // kg CO2 / yr, equation (1) annual mean
   if(!P.p1) return 0;
   const prod = alpha*365*44/12 * Math.min(1,P.ep*epsMult) * (1 - pollShare);   // g CO2 m-2 yr-1
   const calc = PSI * 0.44 * P.ga;
-  return S*(prod - calc)/1000;
+  return (A_CAV + P.ph*(S-A_CAV))*(prod - calc)/1000;
 }
+const A_CAV=Math.PI*0.15*0.15;
+const Gc=t=> P.tc>0 ? t - P.tc*(1-Math.exp(-t/P.tc)) : t;   // integral of the colonisation ramp
+const gyr=t=> Gc(t)-Gc(t-1);                                 // share of steady flux in year t
 const eta2 = () => P.p2 ? P.e2 : 0;
 const eta3 = () => P.p3 ? P.e3 : 0;
 const life = () => P.L0*(1+eta2());
 const embodied = () => P.ci*V*(1-eta3());              // kg CO2 after pillar 3
-function cnet(F,t){ const L=life(); const tt=Math.min(t,L); return P.pi*F*tt - embodied(); }
-function breakEven(F){ return (P.pi*F>0) ? embodied()/(P.pi*F) : Infinity; }
+function cnet(F,t){ const L=life(); const tt=Math.min(t,L); return P.pi*F*Gc(tt) - embodied(); }
+function breakEven(F){ if(P.pi*F<=0) return Infinity; const E=embodied(); let lo=0,hi=2000; if(P.pi*F*Gc(hi)<E) return Infinity; for(let i=0;i<60;i++){const m=(lo+hi)/2; if(P.pi*F*Gc(m)<E) lo=m; else hi=m;} return hi; }
 function segFlux(s, alpha){ return fluxPerModule(alpha===undefined?P.al:alpha, s.eps, s.poll*P.bp/0.2); }
 function lcor(F){
   const L=Math.floor(life()); let costs=P.I, carb=-embodied();
-  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); costs -= P.M*d; carb += P.pi*F*d; }
+  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); costs -= P.M*d; carb += P.pi*F*gyr(t)*d; }
   return carb>0 ? (costs/(carb/1000)) : null;          // EUR per tonne
 }
 function npv(F){
   const L=Math.floor(life()); let v=-P.I;
-  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); v += d*(P.cp*P.pi*F/1000 + P.M); }
+  for(let t=1;t<=L;t++){ const d=Math.pow(1+P.r,-t); v += d*(P.cp*P.pi*F*gyr(t)/1000 + P.M); }
   return v;
 }
 
@@ -556,11 +561,11 @@ window.addEventListener('resize',resize);
 // ---------------------------------------------------------------- UI wiring
 const fmt=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('en-GB',{maximumFractionDigits:d,minimumFractionDigits:d}):'–';
 const sliders={ci:['ci','vCi',v=>v+' kg CO₂ m⁻³'],e2:['e2','vE2',v=>fmt(+v,2)],e3:['e3','vE3',v=>fmt(+v,2)],L0:['L0','vL0',v=>v+' yr'],
-  al:['al','vA',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['ep','vEp',v=>fmt(+v,2)],bp:['bp','vBp',v=>fmt(+v,2)],ga:['ga','vG',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['pi','vPi',v=>fmt(+v,2)],
+  al:['al','vA',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['ep','vEp',v=>fmt(+v,2)],bp:['bp','vBp',v=>fmt(+v,2)],ga:['ga','vG',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['pi','vPi',v=>fmt(+v,2)],ph:['ph','vPh',v=>fmt(+v,2)],tc:['tc','vTc',v=>fmt(+v,1)+' yr'],
   t:['yr','vT',v=>fmt(+v,1)],sp:['sp','vSp',v=>v+' yr/s'],tr:['tr','vTr',v=>fmt(+v,1)+' m'],bud:['bud','vBud',v=>v],lc:['lc','vLc',v=>fmt(+v,2)],lb:['lb','vLb',v=>fmt(+v,2)],le:['le','vLe',v=>fmt(+v,2)],
   I:['cap','vI',v=>'€'+v],M:['ma','vMa',v=>'€'+fmt(+v,1)+'/yr'],r:['rr','vR',v=>fmt(v*100,1)+'%'],cp:['cp','vP',v=>'€'+v+'/t'],
   m:['pm','vM',v=>v],s0:['s0','vS0',v=>fmt(+v,2)],se:['se','vSe',v=>fmt(+v,2)]};
-P.sp=6; P.m=12; P.s0=0.8; P.se=0.5;
+P.sp=6; P.m=12; P.s0=0.8; P.se=0.5; P.ph=1; P.tc=10;
 Object.entries(sliders).forEach(([key,[id,vid,f]])=>{
   const el=$(id); const upd=()=>{P[key]=parseFloat(el.value); $(vid).textContent=f(el.value); refreshNumbers(true);};
   el.addEventListener('input',upd); $(vid).textContent=f(el.value);
@@ -586,7 +591,7 @@ function refreshNumbers(full){
   $('vT').textContent=fmt(P.t,1); $('yrBadge').textContent='Year '+fmt(P.t,1); $('rYr').textContent=fmt(P.t,1);
   solveSiting();
   let N=0, net=0, ann=0;
-  mods.forEach(m=>{ if(P.site && m.rank>=placed[m.k]) return; const F=segFlux(seg[m.k]); N++; net+=cnet(F,P.t); ann+= (P.t<=life()? P.pi*F:0); });
+  mods.forEach(m=>{ if(P.site && m.rank>=placed[m.k]) return; const F=segFlux(seg[m.k]); N++; net+=cnet(F,P.t); ann+= (P.t<=life()? P.pi*F*(P.tc>0?1-Math.exp(-P.t/P.tc):1):0); });
   const Fref=segFlux({eps:1,poll:0.2});
   $('rN').textContent=N.toLocaleString('en-GB');
   $('rNet').textContent=fmt(net/1000,2)+' t CO₂';
@@ -624,10 +629,10 @@ function drawBE(){
 let pilot=null;
 const normCdf=x=>{const t=1/(1+0.2316419*Math.abs(x));const d=0.3989423*Math.exp(-x*x/2);const p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;};
 function alphaBreak(){ // alpha such that module breaks even exactly at L (reference segment)
-  const need=embodied()/(P.pi*life()); // kg CO2/yr needed
+  const need=embodied()/(P.pi*Gc(life())); // steady kg CO2/yr needed
   if(!P.p1) return Infinity;
-  const k=S*365*44/12*Math.min(1,P.ep)*(1-0.2*P.bp/0.2)/1000; // kg per (g C m-2 d-1)
-  const calc=S*PSI*0.44*P.ga/1000;
+  const SS=A_CAV+P.ph*(S-A_CAV); const k=SS*365*44/12*Math.min(1,P.ep)*(1-0.2*P.bp/0.2)/1000; // kg per (g C m-2 d-1)
+  const calc=SS*PSI*0.44*P.ga/1000;
   return (need+calc)/k;
 }
 function probSink(mu,sd){ const ab=alphaBreak(); if(!Number.isFinite(ab)) return 0; if(ab<=0) return 1; return 1-normCdf((Math.log(ab)-mu)/sd); }

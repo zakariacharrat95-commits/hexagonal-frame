@@ -110,7 +110,7 @@ hr{border:none;border-top:1px solid var(--line);margin:14px 0}
       <div class="card"><small>Blocks for the project</small><b id="hN">–</b></div>
       <div class="card"><small>Project cost</small><b id="hCost">–</b></div>
     </div>
-    <div id="truth"><b>Exact:</b> geometry, volumes, masses, steel length, module count, costs from the unit prices shown, net flux F, embodied carbon, break-even and LCOR follow equations (1), (3)–(6) of the proposal. <b>Chosen for display:</b> textures, lighting, algae shapes, particle sizes (SAP and aggregate are enlarged), the CO₂ stream, the tide and every unit price, which are editable assumptions, not quotations.</div>
+    <div id="truth"><b>Exact:</b> geometry, volumes, masses, steel length, module count, costs from the unit prices shown, net flux F with its colonisation lag, embodied carbon, break-even and LCOR follow equations (1), (3)–(6) of the proposal. <b>Chosen for display:</b> textures, lighting, algae shapes, particle sizes (SAP and aggregate are enlarged), the CO₂ stream, the tide and every unit price, which are editable assumptions, not quotations.</div>
   </main>
 
   <aside id="side" aria-label="Controls and calculator">
@@ -161,16 +161,18 @@ hr{border:none;border-top:1px solid var(--line);margin:14px 0}
           <button class="chip" id="p2" aria-pressed="true">SAP self-healing</button>
           <button class="chip" id="p3" aria-pressed="true">CO₂-absorbing mix</button>
         </div>
-        <div class="row"><label>Net production α <b id="vAl"></b></label><input id="al" type="range" min="0.07" max="5" step="0.01" value="0.9"></div>
+        <div class="row"><label>Net production α <b id="vAl"></b></label><input id="al" type="range" min="0.07" max="5" step="0.001" value="0.904"></div>
         <div class="row"><label>Light, temperature, emersion ε <b id="vEp"></b></label><input id="ep" type="range" min="0.1" max="1" step="0.01" value="0.65"></div>
         <div class="row"><label>Pollution penalty βP <b id="vBp"></b></label><input id="bp" type="range" min="0" max="0.6" step="0.01" value="0.2"></div>
-        <div class="row"><label>Calcification γ <b id="vGa"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="0"></div>
+        <div class="row"><label>Calcification γ <b id="vGa"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="900"></div>
         <div class="row"><label>Permanence π <b id="vPi"></b></label><input id="pi" type="range" min="0.1" max="1" step="0.01" value="1"></div>
+        <div class="row"><label>Colonised share of the flat face φ <b id="vPh"></b></label><input id="ph" type="range" min="0" max="1" step="0.01" value="1"></div>
+        <div class="row"><label>Colonisation time constant τ<sub>c</sub> <b id="vTc"></b></label><input id="tc" type="range" min="0" max="20" step="0.5" value="10"></div>
         <div class="row"><label>Concrete carbon intensity <b id="vCi"></b></label><input id="ci" type="range" min="250" max="450" step="10" value="350"></div>
         <div class="row"><label>SAP life gain η₂ <b id="vE2"></b></label><input id="e2" type="range" min="0" max="1.5" step="0.05" value="1"></div>
         <div class="row"><label>CO₂-mix reduction η₃ <b id="vE3"></b></label><input id="e3" type="range" min="0" max="0.8" step="0.01" value="0.6"></div>
         <div class="row"><label>Base service life L₀ <b id="vL0"></b></label><input id="L0" type="range" min="25" max="80" step="1" value="50"></div>
-        <div class="eq">F = S[α·ε(1 − βP) − 0.6·0.44·γ] &nbsp; C<sub>net</sub>(t) = πF·t − E(1 − η₃) &nbsp; L = L₀(1 + η₂)</div>
+        <div class="eq">S = A<sub>cav</sub> + φ·A<sub>face</sub> &nbsp; F = S[α·ε(1 − βP) − 0.6·0.44·γ] &nbsp; C<sub>net</sub>(t) = πF[t − τ<sub>c</sub>(1 − e<sup>−t/τc</sup>)] − E(1 − η₃) &nbsp; L = L₀(1 + η₂)</div>
         <div class="sheet" id="carbSheet"></div>
       </section>
 
@@ -238,14 +240,16 @@ const STEEL_KGM=7850*Math.PI*BAR_D*BAR_D/4, GFRP_KGM=2100*Math.PI*BAR_D*BAR_D/4;
 const ANCH_LEN=0.3, ANCH_D=0.016;
 
 // ================================================================ state
-const P={p1:true,p2:true,p3:true, al:0.9,ep:0.65,bp:0.2,ga:0,pi:1,ci:350,e2:1,e3:0.6,L0:50,
+const P={p1:true,p2:true,p3:true, al:0.904,ep:0.65,bp:0.2,ga:900,pi:1,ph:1,tc:10,ci:350,e2:1,e3:0.6,L0:50,
   wl:400,wh:3,us:0.8, pc:220,cc:400,sd:0.3,ps:4,pr:1.3,pco:2,pmo:3,pa:2,pin:15, mo:12,cy:1, cp:80,ma:0.5,rr:0.04,
   pull:0.75,ex:0,age:4, reinf:'steel', mode:'quay'};
-const fluxF=()=>{ if(!P.p1) return 0; return A_HEX*(P.al*365*44/12*P.ep*(1-P.bp) - 0.6*0.44*P.ga)/1000; };   // kg CO2/yr (S = 0.217 m2)
+const A_CAV=Math.PI*CAV_R*CAV_R, Scol=()=>A_CAV+P.ph*(A_HEX-A_CAV);
+const fluxF=()=>{ if(!P.p1) return 0; return Scol()*(P.al*365*44/12*P.ep*(1-P.bp) - 0.6*0.44*P.ga)/1000; };   // steady kg CO2/yr
+const Gc=t=> P.tc>0 ? t - P.tc*(1-Math.exp(-t/P.tc)) : t, gyr=t=>Gc(t)-Gc(t-1);
 const eta2=()=>P.p2?P.e2:0, eta3=()=>P.p3?P.e3:0, life=()=>P.L0*(1+eta2());
 const embodied=()=>P.ci*V*(1-eta3());
-const breakEven=()=>{const F=P.pi*fluxF(); return F>0?embodied()/F:Infinity;};
-const cnet=t=>P.pi*fluxF()*Math.min(t,life())-embodied();
+const breakEven=()=>{const F=P.pi*fluxF(), E=embodied(); if(F<=0||F*Gc(2000)<E) return Infinity; let lo=0,hi=2000; for(let i=0;i<60;i++){const m=(lo+hi)/2; if(F*Gc(m)<E) lo=m; else hi=m;} return hi;};
+const cnet=t=>P.pi*fluxF()*Gc(Math.min(t,life()))-embodied();
 function reinfMass(){ return P.reinf==='steel'?BAR_LEN*STEEL_KGM: P.reinf==='gfrp'?BAR_LEN*GFRP_KGM:0; }
 function fibreMass(){ return P.reinf==='none'? V*6 : 0; } // 6 kg/m3 synthetic fibres
 function unitCost(){
@@ -256,8 +260,8 @@ function unitCost(){
   const curing=P.p3?P.pco:0, seed=P.p1?P.pa:0;
   return {conc,sap,reinf,anchors,curing,mould:P.pmo,seed,inst:P.pin,total:conc+sap+reinf+anchors+curing+P.pmo+seed+P.pin};
 }
-function lcor(I){ const L=Math.floor(life()); let c=I, carb=-embodied(); for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); c-=P.ma*d; carb+=P.pi*fluxF()*d;} return carb>0?c/(carb/1000):null; }
-function npvUnit(I){ const L=Math.floor(life()); let v=-I; for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); v+=d*(P.cp*P.pi*fluxF()/1000+P.ma);} return v; }
+function lcor(I){ const L=Math.floor(life()); let c=I, carb=-embodied(); for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); c-=P.ma*d; carb+=P.pi*fluxF()*gyr(t)*d;} return carb>0?c/(carb/1000):null; }
+function npvUnit(I){ const L=Math.floor(life()); let v=-I; for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); v+=d*(P.cp*P.pi*fluxF()*gyr(t)/1000+P.ma);} return v; }
 
 // ================================================================ renderer
 const canvas=$('gl'), stage=$('stage');
@@ -524,7 +528,7 @@ function setMode(m){ P.mode=m; $('vQuay').setAttribute('aria-pressed',m==='quay'
   controls.update(); heroPose(); }
 
 // ================================================================ UI
-const S={al:['vAl',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['vEp',v=>fmt(+v,2)],bp:['vBp',v=>fmt(+v,2)],ga:['vGa',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['vPi',v=>fmt(+v,2)],ci:['vCi',v=>v+' kg CO₂ m⁻³'],
+const S={al:['vAl',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['vEp',v=>fmt(+v,2)],bp:['vBp',v=>fmt(+v,2)],ga:['vGa',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['vPi',v=>fmt(+v,2)],ph:['vPh',v=>fmt(+v,2)],tc:['vTc',v=>fmt(+v,1)+' yr'],ci:['vCi',v=>v+' kg CO₂ m⁻³'],
   e2:['vE2',v=>fmt(+v,2)],e3:['vE3',v=>fmt(+v,2)],L0:['vL0',v=>v+' yr'],wl:['vWl',v=>fmt(+v,0)+' m'],wh:['vWh',v=>fmt(+v,1)+' m'],us:['vUs',v=>fmt(v*100,0)+'%'],
   pc:['vPc',v=>'€'+v+' m⁻³'],cc:['vCc',v=>v+' kg m⁻³'],sd:['vSd',v=>fmt(+v,2)+'%'],ps:['vPs',v=>'€'+fmt(+v,1)+' kg⁻¹'],pr:['vPr',v=>'€'+fmt(+v,1)+' kg⁻¹ (steel)'],pco:['vPco',v=>'€'+fmt(+v,1)],
   pmo:['vPm',v=>'€'+fmt(+v,1)],pa:['vPa',v=>'€'+fmt(+v,1)],pin:['vPi2',v=>'€'+v],mo:['vMo',v=>v],cy:['vCy',v=>v],cp:['vCp',v=>'€'+v+' t⁻¹'],ma:['vMa',v=>'€'+fmt(+v,1)+' yr⁻¹'],rr:['vR',v=>fmt(v*100,1)+'%'],
@@ -549,7 +553,7 @@ function onChange(k){
 }
 function compute(){
   const F=fluxF(), L=life(), E=embodied(), be=breakEven(), age=P.age;
-  const absorbed=P.pi*F*Math.min(age,L);
+  const absorbed=P.pi*F*Gc(Math.min(age,L));
   // module counts
   const area=P.wl*P.wh*P.us, N=Math.floor(area/A_TILE);
   const u=unitCost(), capex=N*u.total;
@@ -562,7 +566,7 @@ function compute(){
   // carbon pane
   $('cF').textContent=fmt(F,3); $('cBe').textContent=Number.isFinite(be)?fmt(be,0):'never'; $('cBe').style.color=(Number.isFinite(be)&&be<=L)?'var(--algae)':'var(--emit)';
   sheet('carbSheet',[['Concrete without pillar 3',fmt(P.ci*V,2)+' kg CO₂'],['Embodied after pillar 3, E(1 − η₃)',fmt(E,2)+' kg CO₂'],['Service life L',fmt(L,0)+' yr'],
-    ['Absorbed by year '+fmt(age,1),fmt(absorbed,2)+' kg CO₂'],['Net over the full life',fmt(cnet(L),2)+' kg CO₂'],['Whole project, per year',fmt(N*P.pi*F/1000,2)+' t CO₂'],
+    ['Absorbed by year '+fmt(age,1),fmt(absorbed,2)+' kg CO₂'],['Net over the full life',fmt(cnet(L),2)+' kg CO₂'],['Colonised area S',fmt(Scol(),3)+' m²'],['Whole project, per year at maturity',fmt(N*P.pi*F/1000,2)+' t CO₂'],
     ['Whole project, net over life',fmt(N*cnet(L)/1000,1)+' t CO₂']]);
   // cost pane
   $('kN').textContent=N.toLocaleString('en-GB'); $('kArea').textContent=fmt(area,0)+' m² of tidal face'; $('kCost').textContent=eur(capex); $('kUnit').textContent='€'+fmt(u.total,2)+' per block';
@@ -573,7 +577,7 @@ function compute(){
     ['Production time',prodDays.toLocaleString('en-GB')+' days ('+fmt(weeks,0)+' weeks)'],
     ['Levelised cost of removal',lc===null?'undefined: net emitter':'€'+fmt(lc,0)+' t⁻¹'],['NPV per block at the carbon price',eur(nv)],['NPV of the project',eur(nv*N)]]);
   // geometry pane
-  sheet('geoSheet',[['Flat to flat / corner to corner','500 / 577 mm'],['Thickness / cavity','200 mm / Ø 300 × 100 mm'],['Face area S',fmt(A_HEX,3)+' m²'],['Concrete volume',fmt(V*1000,1)+' L'],
+  sheet('geoSheet',[['Flat to flat / corner to corner','500 / 577 mm'],['Thickness / cavity','200 mm / Ø 300 × 100 mm'],['Hexagon face / cavity area',fmt(A_HEX,3)+' / '+fmt(A_CAV,3)+' m²'],['Concrete volume',fmt(V*1000,1)+' L'],
     ['Mass',fmt(MASS,1)+' kg'],[P.reinf==='none'?'Fibres':'Bars ('+bars.length+' × Ø8)', P.reinf==='none'? fmt(fibreMass(),2)+' kg' : fmt(BAR_LEN,2)+' m · '+fmt(reinfMass(),2)+' kg'],['Cover to reinforcement','40 mm'],
     ['Anchors','2 × M16 stainless, 300 mm'],['SAP in this block',P.p2?fmt(V*P.cc*P.sd/100*1000,0)+' g':'none'],['Blocks per 100 m of quay',fmt(Math.floor(100*P.wh*P.us/A_TILE),0)]]);
 }
