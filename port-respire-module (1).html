@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Port Respire · one module, inside and out · Z. Charrat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600;7..72,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f4f6; --panel:#ffffff; --panel-2:#f2f4f7; --ink:#151b23; --muted:#5d6672; --line:#dde2e8;
+  --blue:#1F4E99; --algae:#2E7D5B; --sap:#B7791F; --mix:#4B5563; --steel:#8a6a52; --emit:#B3402F; --gold:#F2B632;
+  --shadow:0 12px 34px rgba(12,20,32,.22); color-scheme:light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0d0f12; --panel:#16191e; --panel-2:#1d2128; --ink:#e9edf2; --muted:#a0a9b5; --line:#2a3039;
+    --blue:#86a9e8; --algae:#62c497; --sap:#e3a84f; --mix:#a8b0bb; --steel:#c99c7c; --emit:#e3806c; --shadow:0 12px 34px rgba(0,0,0,.5); color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0d0f12; --panel:#16191e; --panel-2:#1d2128; --ink:#e9edf2; --muted:#a0a9b5; --line:#2a3039;
+    --blue:#86a9e8; --algae:#62c497; --sap:#e3a84f; --mix:#a8b0bb; --steel:#c99c7c; --emit:#e3806c; --shadow:0 12px 34px rgba(0,0,0,.5); color-scheme:dark; }
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.45 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{font-family:"Literata",Georgia,"Times New Roman",serif}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#app{display:grid;grid-template-columns:1fr 380px;height:100%}
+#stage{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 40% 30%,#3a3f47 0%,#24272d 55%,#16181c 100%)}
+#gl{display:block;width:100%;height:100%;touch-action:none}
+#side{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.head{padding:16px 18px 10px;border-bottom:1px solid var(--line)}
+.head h1{margin:0;font-size:21px;line-height:1.2}
+.head p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.head a{color:var(--blue);text-decoration:none}
+.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line)}
+.tab{border:none;background:none;padding:9px 12px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+.panes{overflow-y:auto;flex:1;min-height:0}
+.pane{display:none;padding:12px 18px 20px}
+.pane.on{display:block}
+h3.sub{font-size:14px;margin:16px 0 6px}
+h3.sub:first-child{margin-top:4px}
+.row{margin:9px 0}
+.row label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted)}
+.row label b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;margin:6px 0 0;accent-color:var(--blue)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{border:1px solid var(--line);background:var(--panel-2);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0}
+.seg button{border:none;background:var(--panel-2);padding:6px 12px;font-size:12.5px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.sheet{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:12.5px;margin:6px 0}
+.sheet span:nth-child(odd){color:var(--muted)}
+.sheet span:nth-child(even){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px}
+.big div{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.big b{display:block;font-family:"Literata",Georgia,serif;font-size:20px;line-height:1.15;font-variant-numeric:tabular-nums}
+.big small{color:var(--muted);font-size:11.5px}
+.warn{background:color-mix(in srgb,var(--emit) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--emit) 40%,var(--line));border-radius:10px;padding:8px 10px;font-size:12px;margin:8px 0;display:none}
+.note{font-size:11.5px;color:var(--muted);margin:6px 0 0}
+.eq{font-family:"Literata",Georgia,serif;font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:8px 0;overflow-x:auto;white-space:nowrap}
+hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+
+#title{position:absolute;left:20px;top:16px;color:#eef2f6;pointer-events:none;max-width:56%;text-shadow:0 1px 10px rgba(0,0,0,.65)}
+#title h2{margin:0;font-size:22px;font-weight:600;letter-spacing:.2px}
+#title p{margin:3px 0 0;font-size:12.5px;color:#b9c1cc}
+#hud{position:absolute;left:20px;bottom:64px;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 40px)}
+#hud .card{background:rgba(18,21,26,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 12px;color:#e6ebf1;min-width:130px}
+#hud .card small{display:block;color:#a7b0bc;font-size:11px}
+#hud .card b{font-family:"Literata",serif;font-size:18px;font-variant-numeric:tabular-nums}
+#views{position:absolute;right:16px;top:14px;display:flex;gap:6px}
+#views button{background:rgba(18,21,26,.78);color:#e6ebf1;border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:7px 11px;font-size:12.5px;cursor:pointer}
+#views button[aria-pressed="true"]{background:#e6ebf1;color:#151b23}
+#truth{position:absolute;left:0;right:0;bottom:0;padding:8px 18px;background:rgba(10,12,15,.88);color:#b9c1cc;font-size:11.5px;line-height:1.4}
+#truth b{color:#eef2f6}
+.dim,.call{position:absolute;transform:translate(-50%,-50%);pointer-events:none;white-space:nowrap;font-size:11.5px}
+.dim{color:#ffe6a6;background:rgba(20,22,26,.72);border:1px solid rgba(255,230,166,.35);border-radius:5px;padding:1px 6px;font-variant-numeric:tabular-nums}
+.call{color:#eef2f6;background:rgba(20,22,26,.8);border-left:3px solid var(--c,#F2B632);border-radius:4px;padding:3px 8px}
+#loader{position:absolute;inset:0;display:grid;place-items:center;color:#cfd6df;font-size:13px}
+#menuBtn{display:none}
+@media (max-width:900px){
+  #app{grid-template-columns:1fr}
+  #side{position:fixed;left:0;right:0;bottom:0;height:64%;transform:translateY(103%);transition:transform .25s;border-left:none;border-top:1px solid var(--line);border-radius:16px 16px 0 0;z-index:10;padding-bottom:env(safe-area-inset-bottom,0px)}
+  #side.open{transform:none}
+  #menuBtn{display:block;position:absolute;right:16px;top:56px;z-index:6;background:var(--gold);color:#151b23;border:none;border-radius:10px;padding:8px 12px;font-weight:700}
+  #title h2{font-size:17px} #title{max-width:62%}
+  #hud .card{min-width:110px} #hud .card b{font-size:15px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="stage">
+    <canvas id="gl" aria-label="Rendered Port Respire module"></canvas>
+    <div id="loader">Preparing materials…</div>
+    <div id="anno" aria-hidden="true"></div>
+    <div id="title"><h2>One hexagon, inside and out</h2><p>Precast retrofit module · 500 mm flat to flat · 200 mm thick · ≈ 87 kg</p></div>
+    <div id="views" role="group" aria-label="Setting">
+      <button id="vQuay" aria-pressed="true">On the quay</button>
+      <button id="vStudio" aria-pressed="false">Studio</button>
+    </div>
+    <button id="menuBtn">Controls</button>
+    <div id="hud" aria-live="polite">
+      <div class="card"><small>Absorbed by this module</small><b id="hAbs">–</b></div>
+      <div class="card"><small>Net carbon of this module</small><b id="hNet">–</b></div>
+      <div class="card"><small>Blocks for the project</small><b id="hN">–</b></div>
+      <div class="card"><small>Project cost</small><b id="hCost">–</b></div>
+    </div>
+    <div id="truth"><b>Exact:</b> geometry, volumes, masses, steel length, module count, costs from the unit prices shown, net flux F with its colonisation lag, embodied carbon, break-even and LCOR follow equations (1), (3)–(6) of the proposal. <b>Chosen for display:</b> textures, lighting, algae shapes, particle sizes (SAP and aggregate are enlarged), the CO₂ stream, the tide and every unit price, which are editable assumptions, not quotations.</div>
+  </main>
+
+  <aside id="side" aria-label="Controls and calculator">
+    <div class="head">
+      <h1>Port Respire module</h1>
+      <p>Zakaria Charrat · ORCID <a href="https://orcid.org/0009-0009-3714-8416" target="_blank" rel="noopener">0009-0009-3714-8416</a> · <a href="https://zakariacharrat95-commits.github.io/hexagonal-frame/" target="_blank" rel="noopener">all models</a></p>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-p="pView">Module</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="pCarb">Carbon</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="pCost">Cost and blocks</button>
+    </div>
+    <div class="panes">
+      <section class="pane on" id="pView">
+        <h3 class="sub">Take it out of the wall</h3>
+        <div class="row"><label>Pull out of the quay wall <b id="vPull"></b></label><input id="pull" type="range" min="0" max="1" step="0.01" value="0.75"></div>
+        <div class="row"><label>Separate the layers <b id="vEx"></b></label><input id="ex" type="range" min="0" max="1" step="0.01" value="0"></div>
+        <div class="chips">
+          <button class="chip" id="tCut" aria-pressed="false">Section cut</button>
+          <button class="chip" id="tXr" aria-pressed="false">See-through concrete</button>
+          <button class="chip" id="tDim" aria-pressed="true">Dimensions</button>
+          <button class="chip" id="tCall" aria-pressed="true">Callouts</button>
+          <button class="chip" id="tCO2" aria-pressed="true">CO₂ stream</button>
+          <button class="chip" id="tSpin" aria-pressed="false">Turntable</button>
+        </div>
+        <h3 class="sub">Reinforcement</h3>
+        <div class="seg" role="group" aria-label="Reinforcement">
+          <button id="rSteel" aria-pressed="true">Steel mesh Ø8</button>
+          <button id="rGfrp" aria-pressed="false">GFRP bars Ø8</button>
+          <button id="rNone" aria-pressed="false">Fibres only</button>
+        </div>
+        <div class="warn" id="pHwarn">A CO₂-cured matrix with η₃ above 0.3 lowers the pH around steel and can depassivate it. The fibre or GFRP variant avoids the risk; the laboratory work package compares both.</div>
+        <h3 class="sub">Age of the colony</h3>
+        <div class="row"><label>Years on the wall <b id="vAge"></b></label><input id="age" type="range" min="0" max="15" step="0.1" value="4"></div>
+        <p class="note">Algae: articulated coralline fronds (pink), a crustose coralline layer and green sheet algae. Cover grows with age; the flux model uses the steady value.</p>
+        <hr>
+        <div class="sheet" id="geoSheet"></div>
+      </section>
+
+      <section class="pane" id="pCarb">
+        <div class="big">
+          <div><small>Flux F per module</small><b id="cF">–</b><small>kg CO₂ per year</small></div>
+          <div><small>Break-even</small><b id="cBe">–</b><small>years after installation</small></div>
+        </div>
+        <h3 class="sub">Pillars</h3>
+        <div class="chips">
+          <button class="chip" id="p1" aria-pressed="true">Algae</button>
+          <button class="chip" id="p2" aria-pressed="true">SAP self-healing</button>
+          <button class="chip" id="p3" aria-pressed="true">CO₂-absorbing mix</button>
+        </div>
+        <div class="row"><label>Net production α <b id="vAl"></b></label><input id="al" type="range" min="0.07" max="5" step="0.001" value="0.904"></div>
+        <div class="row"><label>Light, temperature, emersion ε <b id="vEp"></b></label><input id="ep" type="range" min="0.1" max="1" step="0.01" value="0.65"></div>
+        <div class="row"><label>Pollution penalty βP <b id="vBp"></b></label><input id="bp" type="range" min="0" max="0.6" step="0.01" value="0.2"></div>
+        <div class="row"><label>Calcification γ <b id="vGa"></b></label><input id="ga" type="range" min="0" max="1500" step="10" value="900"></div>
+        <div class="row"><label>Permanence π <b id="vPi"></b></label><input id="pi" type="range" min="0.1" max="1" step="0.01" value="1"></div>
+        <div class="row"><label>Colonised share of the flat face φ <b id="vPh"></b></label><input id="ph" type="range" min="0" max="1" step="0.01" value="1"></div>
+        <div class="row"><label>Colonisation time constant τ<sub>c</sub> <b id="vTc"></b></label><input id="tc" type="range" min="0" max="20" step="0.5" value="10"></div>
+        <div class="row"><label>Concrete carbon intensity <b id="vCi"></b></label><input id="ci" type="range" min="250" max="450" step="10" value="350"></div>
+        <div class="row"><label>SAP life gain η₂ <b id="vE2"></b></label><input id="e2" type="range" min="0" max="1.5" step="0.05" value="1"></div>
+        <div class="row"><label>CO₂-mix reduction η₃ <b id="vE3"></b></label><input id="e3" type="range" min="0" max="0.8" step="0.01" value="0.6"></div>
+        <div class="row"><label>Base service life L₀ <b id="vL0"></b></label><input id="L0" type="range" min="25" max="80" step="1" value="50"></div>
+        <div class="eq">S = A<sub>cav</sub> + φ·A<sub>face</sub> &nbsp; F = S[α·ε(1 − βP) − 0.6·0.44·γ] &nbsp; C<sub>net</sub>(t) = πF[t − τ<sub>c</sub>(1 − e<sup>−t/τc</sup>)] − E(1 − η₃) &nbsp; L = L₀(1 + η₂)</div>
+        <div class="sheet" id="carbSheet"></div>
+      </section>
+
+      <section class="pane" id="pCost">
+        <div class="big">
+          <div><small>Blocks to produce</small><b id="kN">–</b><small id="kArea">–</small></div>
+          <div><small>Project cost</small><b id="kCost">–</b><small id="kUnit">–</small></div>
+        </div>
+        <h3 class="sub">The wall</h3>
+        <div class="row"><label>Quay length to equip <b id="vWl"></b></label><input id="wl" type="range" min="20" max="3000" step="10" value="400"></div>
+        <div class="row"><label>Height of the tidal band <b id="vWh"></b></label><input id="wh" type="range" min="1" max="8" step="0.1" value="3"></div>
+        <div class="row"><label>Usable share (no fenders, ladders) <b id="vUs"></b></label><input id="us" type="range" min="0.4" max="0.95" step="0.01" value="0.8"></div>
+        <h3 class="sub">Unit prices (assumptions)</h3>
+        <div class="row"><label>Concrete, delivered and placed <b id="vPc"></b></label><input id="pc" type="range" min="120" max="400" step="5" value="220"></div>
+        <div class="row"><label>Cement content <b id="vCc"></b></label><input id="cc" type="range" min="300" max="480" step="5" value="400"></div>
+        <div class="row"><label>SAP dosage (by cement mass) <b id="vSd"></b></label><input id="sd" type="range" min="0" max="1" step="0.05" value="0.3"></div>
+        <div class="row"><label>SAP price <b id="vPs"></b></label><input id="ps" type="range" min="2" max="12" step="0.5" value="4"></div>
+        <div class="row"><label>Reinforcement price <b id="vPr"></b></label><input id="pr" type="range" min="0.8" max="10" step="0.1" value="1.3"></div>
+        <div class="row"><label>CO₂ curing per block <b id="vPco"></b></label><input id="pco" type="range" min="0" max="10" step="0.5" value="2"></div>
+        <div class="row"><label>Mould share per block <b id="vPm"></b></label><input id="pmo" type="range" min="0" max="15" step="0.5" value="3"></div>
+        <div class="row"><label>Algal seeding per block <b id="vPa"></b></label><input id="pa" type="range" min="0" max="10" step="0.5" value="2"></div>
+        <div class="row"><label>Installation per block <b id="vPi2"></b></label><input id="pin" type="range" min="5" max="60" step="1" value="15"></div>
+        <h3 class="sub">Production</h3>
+        <div class="row"><label>Moulds in the yard <b id="vMo"></b></label><input id="mo" type="range" min="1" max="60" step="1" value="12"></div>
+        <div class="row"><label>Casts per mould per day <b id="vCy"></b></label><input id="cy" type="range" min="1" max="3" step="1" value="1"></div>
+        <h3 class="sub">Value</h3>
+        <div class="row"><label>Carbon price (voluntary) <b id="vCp"></b></label><input id="cp" type="range" min="0" max="400" step="5" value="80"></div>
+        <div class="row"><label>Avoided maintenance per block <b id="vMa"></b></label><input id="ma" type="range" min="0" max="3" step="0.1" value="0.5"></div>
+        <div class="row"><label>Discount rate <b id="vR"></b></label><input id="rr" type="range" min="0" max="0.1" step="0.005" value="0.04"></div>
+        <div class="sheet" id="costSheet"></div>
+        <p class="note">All prices are editable assumptions for the order of magnitude. Replace them with supplier quotations before any decision.</p>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('en-GB',{maximumFractionDigits:d,minimumFractionDigits:d}):'–';
+const eur=v=>(v<0?'−':'')+'€'+(Math.abs(v)>=1e6?fmt(Math.abs(v)/1e6,2)+' M':Math.abs(v)>=1e4?fmt(Math.abs(v)/1e3,0)+' k':fmt(Math.abs(v),0));
+
+// ================================================================ exact geometry
+const FF=0.5, R=FF/Math.sqrt(3), T=0.2, CAV_R=0.15, CAV_D=0.1;
+const A_HEX=Math.sqrt(3)/2*FF*FF;                 // 0.2165 m2
+const V_GROSS=A_HEX*T, V_CAV=Math.PI*CAV_R*CAV_R*CAV_D, V=V_GROSS-V_CAV;   // m3
+const RHO=2400, MASS=V*RHO;
+const JOINT=0.01, A_TILE=Math.sqrt(3)/2*(FF+JOINT)*(FF+JOINT);
+// reinforcement: three horizontal + three vertical bars at z = -0.05, cover 40 mm to the hexagon edges
+const COVER=0.04, BAR_D=0.008, BAR_Z=-0.05;
+function chordX(y){ // half-width of the hexagon (corners on x) at height y, minus cover
+  const ay=Math.abs(y); const half=R - ay/Math.sqrt(3); return half - COVER/ Math.cos(Math.PI/6);
+}
+const bars=[];
+[-0.12,0,0.12].forEach(y=>{const h=chordX(y); bars.push({a:[-h,y],b:[h,y]});});
+[-0.12,0,0.12].forEach(x=>{const top=FF/2-COVER; const lim=Math.min(top, (R-Math.abs(x)-COVER)*Math.sqrt(3)); bars.push({a:[x,-lim],b:[x,lim]});});
+const BAR_LEN=bars.reduce((s,b)=>s+Math.hypot(b.b[0]-b.a[0],b.b[1]-b.a[1]),0);
+const STEEL_KGM=7850*Math.PI*BAR_D*BAR_D/4, GFRP_KGM=2100*Math.PI*BAR_D*BAR_D/4;
+const ANCH_LEN=0.3, ANCH_D=0.016;
+
+// ================================================================ state
+const P={p1:true,p2:true,p3:true, al:0.904,ep:0.65,bp:0.2,ga:900,pi:1,ph:1,tc:10,ci:350,e2:1,e3:0.6,L0:50,
+  wl:400,wh:3,us:0.8, pc:220,cc:400,sd:0.3,ps:4,pr:1.3,pco:2,pmo:3,pa:2,pin:15, mo:12,cy:1, cp:80,ma:0.5,rr:0.04,
+  pull:0.75,ex:0,age:4, reinf:'steel', mode:'quay'};
+const A_CAV=Math.PI*CAV_R*CAV_R, Scol=()=>A_CAV+P.ph*(A_HEX-A_CAV);
+const fluxF=()=>{ if(!P.p1) return 0; return Scol()*(P.al*365*44/12*P.ep*(1-P.bp) - 0.6*0.44*P.ga)/1000; };   // steady kg CO2/yr
+const Gc=t=> P.tc>0 ? t - P.tc*(1-Math.exp(-t/P.tc)) : t, gyr=t=>Gc(t)-Gc(t-1);
+const eta2=()=>P.p2?P.e2:0, eta3=()=>P.p3?P.e3:0, life=()=>P.L0*(1+eta2());
+const embodied=()=>P.ci*V*(1-eta3());
+const breakEven=()=>{const F=P.pi*fluxF(), E=embodied(); if(F<=0||F*Gc(2000)<E) return Infinity; let lo=0,hi=2000; for(let i=0;i<60;i++){const m=(lo+hi)/2; if(F*Gc(m)<E) lo=m; else hi=m;} return hi;};
+const cnet=t=>P.pi*fluxF()*Gc(Math.min(t,life()))-embodied();
+function reinfMass(){ return P.reinf==='steel'?BAR_LEN*STEEL_KGM: P.reinf==='gfrp'?BAR_LEN*GFRP_KGM:0; }
+function fibreMass(){ return P.reinf==='none'? V*6 : 0; } // 6 kg/m3 synthetic fibres
+function unitCost(){
+  const conc=V*P.pc, sap=P.p2? V*P.cc*P.sd/100*P.ps : 0;
+  const reinfPrice = P.reinf==='gfrp'? P.pr*4.5 : P.pr;   // GFRP priced per kg at 4.5x steel
+  const reinf=reinfMass()*reinfPrice + fibreMass()*3.5;
+  const anchors=2*1.6;
+  const curing=P.p3?P.pco:0, seed=P.p1?P.pa:0;
+  return {conc,sap,reinf,anchors,curing,mould:P.pmo,seed,inst:P.pin,total:conc+sap+reinf+anchors+curing+P.pmo+seed+P.pin};
+}
+function lcor(I){ const L=Math.floor(life()); let c=I, carb=-embodied(); for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); c-=P.ma*d; carb+=P.pi*fluxF()*gyr(t)*d;} return carb>0?c/(carb/1000):null; }
+function npvUnit(I){ const L=Math.floor(life()); let v=-I; for(let t=1;t<=L;t++){const d=Math.pow(1+P.rr,-t); v+=d*(P.cp*P.pi*fluxF()*gyr(t)/1000+P.ma);} return v; }
+
+// ================================================================ renderer
+const canvas=$('gl'), stage=$('stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:false});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.72;
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled=true;
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x1f2328); scene.fog=new THREE.Fog(0x1f2328,7,16);
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new THREE.RoomEnvironment(),0.04).texture;
+const ENV=0.55;
+const camera=new THREE.PerspectiveCamera(32,1,0.01,80);
+const controls=new THREE.OrbitControls(camera,canvas); controls.enableDamping=true; controls.dampingFactor=0.08; controls.minDistance=0.5; controls.maxDistance=9;
+
+const key=new THREE.DirectionalLight(0xfff3e2,1.5); key.position.set(-2.2,3.2,3); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048); key.shadow.camera.left=-3; key.shadow.camera.right=3; key.shadow.camera.top=3; key.shadow.camera.bottom=-3; key.shadow.bias=-0.0004; key.shadow.normalBias=0.01; key.shadow.radius=4;
+scene.add(key);
+const rim=new THREE.DirectionalLight(0xbcd6ff,0.55); rim.position.set(3,1.5,-2); scene.add(rim);
+scene.add(new THREE.HemisphereLight(0xdfe9f5,0x30343a,0.15));
+
+// ================================================================ procedural textures
+function noiseField(n,seed){ // value noise with octaves, 0..1
+  let s=seed; const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  const out=new Float32Array(n*n);
+  for(const [cells,amp] of [[8,0.5],[16,0.25],[48,0.15],[128,0.1]]){
+    const g=new Float32Array((cells+1)*(cells+1)); for(let i=0;i<g.length;i++) g[i]=rnd();
+    for(let i=0;i<cells;i++){g[i*(cells+1)+cells]=g[i*(cells+1)];} for(let j=0;j<=cells;j++){g[cells*(cells+1)+j]=g[j];}
+    for(let y=0;y<n;y++){const fy=y/n*cells,iy=Math.floor(fy),ty=fy-iy,sy=ty*ty*(3-2*ty);
+      for(let x=0;x<n;x++){const fx=x/n*cells,ix=Math.floor(fx),tx=fx-ix,sx=tx*tx*(3-2*tx);
+        const a=g[iy*(cells+1)+ix],b=g[iy*(cells+1)+ix+1],c=g[(iy+1)*(cells+1)+ix],d=g[(iy+1)*(cells+1)+ix+1];
+        out[y*n+x]+=amp*((a*(1-sx)+b*sx)*(1-sy)+(c*(1-sx)+d*sx)*sy);}}
+  }
+  return out;
+}
+function makeConcrete(n,tone,seed,pores){
+  const f=noiseField(n,seed), c=document.createElement('canvas'); c.width=c.height=n; const g=c.getContext('2d'), im=g.createImageData(n,n);
+  const b=document.createElement('canvas'); b.width=b.height=n; const gb=b.getContext('2d'), ib=gb.createImageData(n,n);
+  let s=seed*7+3; const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  for(let i=0;i<n*n;i++){const v=f[i]; const k=(v-0.5)*46;
+    im.data[i*4]=tone[0]+k; im.data[i*4+1]=tone[1]+k; im.data[i*4+2]=tone[2]+k*1.05; im.data[i*4+3]=255;
+    const h=120+v*90; ib.data[i*4]=ib.data[i*4+1]=ib.data[i*4+2]=h; ib.data[i*4+3]=255;}
+  // pores and fine aggregate specks
+  for(let p=0;p<pores;p++){const x=Math.floor(rnd()*n),y=Math.floor(rnd()*n),r=rnd()<0.85?1:2;
+    for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const xx=(x+dx+n)%n,yy=(y+dy+n)%n,i=(yy*n+xx)*4; im.data[i]-=26;im.data[i+1]-=26;im.data[i+2]-=25; ib.data[i]=ib.data[i+1]=ib.data[i+2]=70;}}
+  for(let p=0;p<pores*0.6;p++){const x=Math.floor(rnd()*n),y=Math.floor(rnd()*n),i=(y*n+x)*4; const k=rnd()<0.5?24:-18; im.data[i]+=k;im.data[i+1]+=k;im.data[i+2]+=k;}
+  g.putImageData(im,0,0); gb.putImageData(ib,0,0);
+  const map=new THREE.CanvasTexture(c); map.encoding=THREE.sRGBEncoding; map.wrapS=map.wrapT=THREE.RepeatWrapping; map.anisotropy=8;
+  const bump=new THREE.CanvasTexture(b); bump.wrapS=bump.wrapT=THREE.RepeatWrapping;
+  return {map,bump};
+}
+function makeWater(n){
+  const f=noiseField(n,91), c=document.createElement('canvas'); c.width=c.height=n; const g=c.getContext('2d'), im=g.createImageData(n,n);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x; const dx=f[y*n+(x+1)%n]-f[i], dy=f[((y+1)%n)*n+x]-f[i];
+    im.data[i*4]=128+dx*900; im.data[i*4+1]=128+dy*900; im.data[i*4+2]=255; im.data[i*4+3]=255;}
+  g.putImageData(im,0,0); const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
+}
+const texModule=makeConcrete(512,[150,150,145],17,2600);
+const texWall=makeConcrete(512,[108,110,108],41,7000);
+texModule.map.repeat.set(3.2,3.2); texModule.bump.repeat.set(3.2,3.2);
+texWall.map.repeat.set(3,3); texWall.bump.repeat.set(3,3);
+const waterNormal=makeWater(256); waterNormal.repeat.set(6,6);
+
+// ================================================================ materials
+const cutColor='vec3(0.36,0.37,0.38)';
+function withCut(mat){ mat.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace('#include <dithering_fragment>','#include <dithering_fragment>\n if(!gl_FrontFacing){ gl_FragColor=vec4('+cutColor+',1.0); }'); }; return mat; }
+const clip=new THREE.Plane(new THREE.Vector3(-1,0,0),10);
+const mConcrete=withCut(new THREE.MeshStandardMaterial({map:texModule.map,bumpMap:texModule.bump,bumpScale:0.0025,roughness:0.92,metalness:0,envMapIntensity:ENV,side:THREE.DoubleSide,clippingPlanes:[clip],transparent:false}));
+const mWall=new THREE.MeshStandardMaterial({map:texWall.map,bumpMap:texWall.bump,bumpScale:0.003,roughness:0.95,envMapIntensity:ENV});
+const mNeighbour=new THREE.MeshStandardMaterial({map:texModule.map,bumpMap:texModule.bump,bumpScale:0.0025,roughness:0.92,envMapIntensity:ENV,color:0xd8d8d4});
+const mSteel=new THREE.MeshStandardMaterial({color:0x6e5444,metalness:0.75,roughness:0.5,clippingPlanes:[clip]});
+const mGfrp=new THREE.MeshStandardMaterial({color:0xc9b45a,metalness:0.05,roughness:0.45,clippingPlanes:[clip]});
+const mAnchor=new THREE.MeshStandardMaterial({color:0xb9bec4,metalness:0.95,roughness:0.28,clippingPlanes:[clip]});
+const mSap=new THREE.MeshPhysicalMaterial({color:0xe5a63a,roughness:0.22,clearcoat:0.8,clearcoatRoughness:0.2,clippingPlanes:[clip]});
+const mAgg=new THREE.MeshStandardMaterial({color:0x5a5f66,roughness:0.85,clippingPlanes:[clip]});
+const mSub=withCut(new THREE.MeshStandardMaterial({color:0xcfc4ad,roughness:1,bumpMap:texWall.bump,bumpScale:0.004,side:THREE.DoubleSide,clippingPlanes:[clip]}));
+const mCrust=new THREE.MeshStandardMaterial({color:0x7d4c63,roughness:0.95,bumpMap:texWall.bump,bumpScale:0.008,clippingPlanes:[clip]});
+const mFrond=new THREE.MeshStandardMaterial({color:0x9a4f72,roughness:0.75,clippingPlanes:[clip]});
+const mFrondTip=new THREE.MeshStandardMaterial({color:0xd9a7bb,roughness:0.6,clippingPlanes:[clip]});
+const mUlva=new THREE.MeshStandardMaterial({color:0x2f7a3c,roughness:0.55,side:THREE.DoubleSide,clippingPlanes:[clip]});
+const mWater=new THREE.MeshPhysicalMaterial({color:0x1d4f5e,roughness:0.08,metalness:0.0,normalMap:waterNormal,normalScale:new THREE.Vector2(0.35,0.35),transparent:true,opacity:0.78,clearcoat:1,clearcoatRoughness:0.1});
+const mDim=new THREE.LineBasicMaterial({color:0xffe08a});
+// colours are authored in sRGB; convert once for the linear pipeline
+[mSteel,mGfrp,mAnchor,mSap,mAgg,mSub,mCrust,mFrond,mFrondTip,mUlva,mWater,mNeighbour].forEach(m=>m.color.convertSRGBToLinear());
+const lin=h=>new THREE.Color(h).convertSRGBToLinear();
+
+// ================================================================ module geometry
+function hexShape(r){const s=new THREE.Shape(); for(let i=0;i<6;i++){const a=i*Math.PI/3; const x=r*Math.cos(a),y=r*Math.sin(a); i?s.lineTo(x,y):s.moveTo(x,y);} s.closePath(); return s;}
+const BEV=0.006;
+function bodyGeometry(){
+  const back=new THREE.ExtrudeGeometry(hexShape(R),{depth:T-CAV_D,bevelEnabled:false,curveSegments:6});
+  back.translate(0,0,-T/2);
+  const fs=hexShape(R); const h=new THREE.Path(); h.absarc(0,0,CAV_R,0,Math.PI*2,true); fs.holes.push(h);
+  const front=new THREE.ExtrudeGeometry(fs,{depth:CAV_D,bevelEnabled:false,curveSegments:64});
+  front.translate(0,0,T/2-CAV_D);
+  // interlock keys on the two flat edges (top: tongue, bottom: groove rim)
+  const key1=new THREE.BoxGeometry(0.11,0.018,0.07); key1.translate(0,FF/2+0.008,-0.02);
+  const g=THREE.BufferGeometryUtils.mergeBufferGeometries([back,front,key1.toNonIndexed()]);
+  g.computeVertexNormals(); return g;
+}
+const hero=new THREE.Group(); scene.add(hero);
+const body=new THREE.Mesh(bodyGeometry(),mConcrete); body.castShadow=true; body.receiveShadow=true; hero.add(body);
+// groove marking on the lower flat edge
+const groove=new THREE.Mesh(new THREE.BoxGeometry(0.115,0.004,0.072),new THREE.MeshStandardMaterial({color:0x3d4045,roughness:1}));
+groove.position.set(0,-FF/2+0.001,-0.02); hero.add(groove);
+// chamfer label plate (cast stamp)
+const stampC=document.createElement('canvas'); stampC.width=256; stampC.height=64; {const g=stampC.getContext('2d'); g.fillStyle='#a9a9a4'; g.fillRect(0,0,256,64); g.fillStyle='#6e6f6c'; g.font='bold 22px Public Sans, Arial'; g.fillText('PR-H500 · EN 206 · XS3',12,40);}
+const stampT=new THREE.CanvasTexture(stampC); stampT.encoding=THREE.sRGBEncoding;
+const stamp=new THREE.Mesh(new THREE.PlaneGeometry(0.11,0.0275),new THREE.MeshStandardMaterial({map:stampT,roughness:0.95,transparent:true,opacity:0.85,clippingPlanes:[clip]}));
+stamp.position.set(-0.17,-0.16,T/2+0.0006); hero.add(stamp);
+
+// substrate in the cavity
+const subGroup=new THREE.Group(); hero.add(subGroup);
+const sub=new THREE.Mesh(new THREE.CylinderGeometry(CAV_R-0.002,CAV_R-0.002,CAV_D-0.004,64).rotateX(Math.PI/2),mSub);
+sub.position.z=T/2-CAV_D/2; sub.castShadow=true; sub.receiveShadow=true; subGroup.add(sub);
+// crustose coralline layer
+const crustG=new THREE.CircleGeometry(CAV_R-0.004,64); const crust=new THREE.Mesh(crustG,mCrust); crust.position.z=T/2+0.0012; subGroup.add(crust);
+
+// algae: articulated coralline fronds (segmented, branching) + green sheet blades
+let rs=1234; const rnd=()=>{rs=(rs*16807)%2147483647;return rs/2147483647;};
+const segGeo=new THREE.CylinderGeometry(0.0019,0.0024,0.0048,7,1); segGeo.rotateX(Math.PI/2);
+const fronds=[]; // each: list of segment transforms
+function growFrond(x,y){ const segs=[]; const n=4+Math.floor(rnd()*6);
+  const dir=new THREE.Vector3(x*4+(rnd()-0.5)*0.5,y*4+(rnd()-0.3)*0.5,1).normalize(); let p=new THREE.Vector3(x,y,T/2+0.002);
+  const branch=(start,d,len,depth)=>{let q=start.clone(), dd=d.clone();
+    for(let i=0;i<len;i++){ dd.x+=(rnd()-0.5)*0.25; dd.y+=(rnd()-0.5)*0.25+0.02; dd.normalize(); q=q.clone().addScaledVector(dd,0.0052);
+      segs.push({p:q.clone(),d:dd.clone(),depth,i});
+      if(depth<3 && i>0 && rnd()<0.42){ const nd=dd.clone().add(new THREE.Vector3((rnd()-0.5)*1.2,(rnd()-0.5)*1.2,0)).normalize(); branch(q,nd,Math.max(2,len-i-1),depth+1);} } };
+  branch(p,dir,n,0); return segs; }
+for(let i=0;i<330;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*(CAV_R-0.01); fronds.push(growFrond(r*Math.cos(a),r*Math.sin(a)));}
+const allSegs=[].concat(...fronds.map((f,fi)=>f.map(s=>({...s,fi}))));
+const frondIM=new THREE.InstancedMesh(segGeo,mFrond,allSegs.length); frondIM.castShadow=true; subGroup.add(frondIM);
+const tipGeo=new THREE.SphereGeometry(0.0028,8,6); const tips=allSegs.filter((s,i)=>i===allSegs.length-1||allSegs[i+1].fi!==s.fi||allSegs[i+1].depth<s.depth);
+const tipIM=new THREE.InstancedMesh(tipGeo,mFrondTip,tips.length); subGroup.add(tipIM);
+// green blades
+function bladeGeo(){const g=new THREE.PlaneGeometry(0.03,0.07,4,8); const p=g.attributes.position; for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i); p.setZ(i,0.012*Math.sin((y+0.035)*28)+0.01*(x*x)*80); p.setX(i,x*(1-0.55*((y+0.035)/0.07)**2));} g.translate(0,0.035,0); g.computeVertexNormals(); return g;}
+const blades=[]; const bladeG=bladeGeo();
+for(let i=0;i<34;i++){const a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*(CAV_R-0.02); const m=new THREE.Mesh(bladeG,mUlva); m.position.set(r*Math.cos(a),r*Math.sin(a),T/2+0.002);
+  m.rotation.set(-Math.PI/2+0.9+rnd()*0.5,0,rnd()*Math.PI*2); m.userData.base=m.rotation.clone(); m.userData.ph=rnd()*6; m.castShadow=true; subGroup.add(m); blades.push(m);}
+
+// reinforcement and anchors
+const reinfGroup=new THREE.Group(); hero.add(reinfGroup);
+const ribGeo=new THREE.TorusGeometry(BAR_D/2+0.0006,0.0007,4,10);
+function buildReinf(){
+  while(reinfGroup.children.length) reinfGroup.remove(reinfGroup.children[0]);
+  if(P.reinf==='none'){ // fibres
+    const fg=new THREE.CylinderGeometry(0.0006,0.0006,0.04,4); const n=520; const im=new THREE.InstancedMesh(fg,new THREE.MeshStandardMaterial({color:0xdedad0,roughness:0.6,clippingPlanes:[clip]}),n);
+    const m=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), sc=new THREE.Vector3(1,1,1); let k=0;
+    while(k<n){const x=(rnd()-0.5)*0.52,y=(rnd()-0.5)*0.48,z=-0.09+rnd()*0.18; if(!insideHex(x,y,0.02)||(z>0&&x*x+y*y<0.16*0.16)) continue; e.set(rnd()*3,rnd()*3,rnd()*3); q.setFromEuler(e); m.compose(new THREE.Vector3(x,y,z),q,sc); im.setMatrixAt(k++,m);}
+    reinfGroup.add(im); return; }
+  const mat=P.reinf==='steel'?mSteel:mGfrp;
+  bars.forEach(b=>{ const len=Math.hypot(b.b[0]-b.a[0],b.b[1]-b.a[1]); const c=new THREE.Mesh(new THREE.CylinderGeometry(BAR_D/2,BAR_D/2,len,12),mat);
+    c.position.set((b.a[0]+b.b[0])/2,(b.a[1]+b.b[1])/2,BAR_Z); if(Math.abs(b.a[1]-b.b[1])<1e-6) c.rotation.z=Math.PI/2; c.castShadow=true; reinfGroup.add(c);
+    if(P.reinf==='steel'){ const n=Math.floor(len/0.012); const im=new THREE.InstancedMesh(ribGeo,mat,n); const m=new THREE.Matrix4(),q=new THREE.Quaternion();
+      const horiz=Math.abs(b.a[1]-b.b[1])<1e-6; q.setFromEuler(new THREE.Euler(horiz?0:Math.PI/2,horiz?Math.PI/2:0,0.3));
+      for(let i=0;i<n;i++){const t=(i+0.5)/n; m.compose(new THREE.Vector3(b.a[0]+(b.b[0]-b.a[0])*t,b.a[1]+(b.b[1]-b.a[1])*t,BAR_Z),q,new THREE.Vector3(1,1,1)); im.setMatrixAt(i,m);} reinfGroup.add(im);} });
+}
+const anchorGroup=new THREE.Group(); hero.add(anchorGroup);
+[-0.17,0.17].forEach(x=>{const a=new THREE.Mesh(new THREE.CylinderGeometry(ANCH_D/2,ANCH_D/2,ANCH_LEN,16).rotateX(Math.PI/2),mAnchor); a.position.set(x,0,-T/2-ANCH_LEN/2+0.12); a.castShadow=true; anchorGroup.add(a);
+  const nut=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.012,6).rotateX(Math.PI/2),mAnchor); nut.position.set(x,0,-T/2-0.005); anchorGroup.add(nut);});
+
+// SAP particles and carbonated aggregate (enlarged for display)
+function insideHex(x,y,m){const ax=Math.abs(x),ay=Math.abs(y); return ay<=FF/2-m && (ax*Math.cos(Math.PI/6)+ay*0.5)<=FF/2-m;}
+const sapPts=[], aggPts=[];
+while(sapPts.length<340){const x=(rnd()-0.5)*0.56,y=(rnd()-0.5)*0.5,z=-T/2+0.012+rnd()*(T-0.024); if(!insideHex(x,y,0.012)) continue; if(z>T/2-CAV_D-0.004&&x*x+y*y<(CAV_R+0.006)**2) continue; sapPts.push([x,y,z,0.7+rnd()*0.6]);}
+while(aggPts.length<300){const x=(rnd()-0.5)*0.56,y=(rnd()-0.5)*0.5,z=-T/2+0.015+rnd()*(T-0.03); if(!insideHex(x,y,0.015)) continue; if(z>T/2-CAV_D-0.008&&x*x+y*y<(CAV_R+0.01)**2) continue; aggPts.push([x,y,z,0.6+rnd()*0.9,rnd()*6]);}
+const sapIM=new THREE.InstancedMesh(new THREE.SphereGeometry(0.0035,10,8),mSap,sapPts.length);
+const aggIM=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.008,0),mAgg,aggPts.length);
+hero.add(sapIM,aggIM);
+
+// dimension lines (in hero space)
+const dimGroup=new THREE.Group(); hero.add(dimGroup);
+function dimLine(a,b,off){ const g=new THREE.BufferGeometry().setFromPoints([a.clone().add(off),b.clone().add(off),]); const l=new THREE.Line(g,mDim); dimGroup.add(l);
+  [a,b].forEach(p=>{const t=new THREE.BufferGeometry().setFromPoints([p.clone(),p.clone().add(off.clone().multiplyScalar(1.15))]); dimGroup.add(new THREE.Line(t,mDim));});
+  const dir=b.clone().sub(a).normalize(); [[a,dir],[b,dir.clone().negate()]].forEach(([p,d])=>{const c=new THREE.Mesh(new THREE.ConeGeometry(0.006,0.02,10),new THREE.MeshBasicMaterial({color:0xffe08a})); c.position.copy(p.clone().add(off).addScaledVector(d,0.01)); c.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().negate()); dimGroup.add(c);});
+  return a.clone().add(b).multiplyScalar(0.5).add(off.clone().multiplyScalar(1.35)); }
+const dims=[
+  {txt:'500 flat to flat', at:dimLine(new THREE.Vector3(R+0.0,-FF/2,T/2),new THREE.Vector3(R,FF/2,T/2),new THREE.Vector3(0.09,0,0))},
+  {txt:'577 corner to corner', at:dimLine(new THREE.Vector3(-R,-FF/2,T/2),new THREE.Vector3(R,-FF/2,T/2),new THREE.Vector3(0,-0.06,0))},
+  {txt:'200 thick', at:dimLine(new THREE.Vector3(-R,FF/2,-T/2),new THREE.Vector3(-R,FF/2,T/2),new THREE.Vector3(-0.06,0.05,0))},
+  {txt:'Ø 300 cavity', at:dimLine(new THREE.Vector3(-CAV_R,0,T/2+0.003),new THREE.Vector3(CAV_R,0,T/2+0.003),new THREE.Vector3(0,0.19,0.03))},
+];
+const callouts=[
+  {txt:'Articulated coralline fronds', c:'#c77c9a', obj:()=>new THREE.Vector3(0.05,0.05,T/2+0.05)},
+  {txt:'Crustose coralline layer', c:'#b07a8e', obj:()=>new THREE.Vector3(-0.1,-0.07,T/2+0.003)},
+  {txt:'SAP particles (enlarged)', c:'#e5a63a', obj:()=>new THREE.Vector3(0.2,-0.08,-0.02)},
+  {txt:'Carbonated aggregate', c:'#7c838c', obj:()=>new THREE.Vector3(-0.2,0.08,-0.04)},
+  {txt:'Reinforcement, cover 40 mm', c:'#c99c7c', obj:()=>new THREE.Vector3(0.0,-0.12,BAR_Z)},
+  {txt:'Anchors into the existing wall', c:'#b9bec4', obj:()=>new THREE.Vector3(0.17,0,-T/2-0.18)},
+];
+const anno=$('anno'); const dimEls=dims.map(d=>{const e=document.createElement('div');e.className='dim';e.textContent=d.txt;anno.appendChild(e);return e;});
+const callEls=callouts.map(d=>{const e=document.createElement('div');e.className='call';e.style.setProperty('--c',d.c);e.textContent=d.txt;anno.appendChild(e);return e;});
+
+// CO2 stream
+const co2N=160, co2IM=new THREE.InstancedMesh(new THREE.SphereGeometry(0.0035,8,6),new THREE.MeshBasicMaterial({color:0xcfefff,transparent:true,opacity:0.75}),co2N);
+const co2=[...Array(co2N)].map((_,i)=>({ph:rnd(),x:(rnd()-0.5)*0.34,y:(rnd()-0.5)*0.34,toAlgae:i%5!==0})); hero.add(co2IM);
+
+// ================================================================ the quay wall and the studio
+const quay=new THREE.Group(); scene.add(quay);
+const WALL_W=7, WALL_H=4.4, WALL_Z=-T/2-0.002;
+const wall=new THREE.Mesh(new THREE.BoxGeometry(WALL_W,WALL_H,1.2),mWall); wall.position.set(0,0.4,WALL_Z-0.6); wall.receiveShadow=true; quay.add(wall);
+const cope=new THREE.Mesh(new THREE.BoxGeometry(WALL_W,0.25,1.6),new THREE.MeshStandardMaterial({color:0xd2b84d,roughness:0.7})); cope.position.set(0,0.4+WALL_H/2+0.12,WALL_Z-0.4); cope.castShadow=true; quay.add(cope);
+// neighbours: same body geometry, hex packing, the centre slot left for the hero
+const nb=[]; const colW=1.5*(R+JOINT/Math.sqrt(3)), rowH=FF+JOINT;
+for(let c=-6;c<=6;c++)for(let r=-4;r<=4;r++){ const x=c*colW, y=r*rowH+(Math.abs(c)%2?rowH/2:0); if(c===0&&r===0) continue; if(Math.abs(x)>WALL_W/2-0.35||y<-1.6||y>1.9) continue; nb.push([x,y]); }
+const nbIM=new THREE.InstancedMesh(body.geometry,mNeighbour,nb.length); nbIM.castShadow=true; nbIM.receiveShadow=true;
+const nbCav=new THREE.InstancedMesh(new THREE.CircleGeometry(CAV_R-0.002,40),new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.95,bumpMap:texWall.bump,bumpScale:0.02}),nb.length);
+{const m=new THREE.Matrix4(),c=new THREE.Color(); const cols=[0x5e3447,0x6b3e52,0x3d5c3a,0x4f3a45,0x704358]; nb.forEach(([x,y],i)=>{m.makeTranslation(x,y,0); nbIM.setMatrixAt(i,m); m.makeTranslation(x,y,T/2-0.03); nbCav.setMatrixAt(i,m); c.copy(lin(cols[(i*7)%cols.length])); nbCav.setColorAt(i,c);});}
+quay.add(nbIM,nbCav);
+// empty slot shadow (back of the cavity left by the pulled module)
+const slot=new THREE.Mesh(new THREE.ShapeGeometry(hexShape(R)),new THREE.MeshStandardMaterial({color:0x2b2e33,roughness:1})); slot.position.z=-T/2+0.001; quay.add(slot);
+// water
+const WATER_Y=-0.9;
+const water=new THREE.Mesh(new THREE.PlaneGeometry(14,10,1,1).rotateX(-Math.PI/2),mWater); water.position.set(0,WATER_Y,3.4); water.receiveShadow=true; quay.add(water);
+// wet band darkening below high-water line
+const wet=new THREE.Mesh(new THREE.PlaneGeometry(WALL_W,1.4),new THREE.MeshBasicMaterial({color:0x10202a,transparent:true,opacity:0.22,depthWrite:false})); wet.position.set(0,WATER_Y+0.45,WALL_Z+0.0015); quay.add(wet);
+
+// studio floor
+const studio=new THREE.Group(); scene.add(studio);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(4,64).rotateX(-Math.PI/2),new THREE.ShadowMaterial({opacity:0.35})); floor.position.y=-0.34; floor.receiveShadow=true; studio.add(floor);
+const plinth=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.52,0.06,64),new THREE.MeshStandardMaterial({color:0x2a2d32,roughness:0.55,metalness:0.1})); plinth.position.y=-0.31; plinth.receiveShadow=true; studio.add(plinth);
+
+// ================================================================ layout of the hero (pull, explode, mode)
+const tmpM=new THREE.Matrix4(), tmpQ=new THREE.Quaternion(), tmpS=new THREE.Vector3(), tmpV=new THREE.Vector3();
+function placeParticles(){
+  const e=P.ex;
+  sapPts.forEach(([x,y,z,s],i)=>{const k=s*(1+1.6*e); tmpS.set(k,k,k); tmpV.set(x*(1+0.5*e),y*(1+0.5*e),z+e*0.06); tmpM.compose(tmpV,tmpQ.identity(),tmpS); sapIM.setMatrixAt(i,tmpM);});
+  aggPts.forEach(([x,y,z,s,r],i)=>{tmpS.set(s,s*0.8,s); tmpQ.setFromEuler(new THREE.Euler(r,r*1.3,r*0.7)); tmpV.set(x*(1+0.5*e),y*(1+0.5*e),z-e*0.03); tmpM.compose(tmpV,tmpQ,tmpS); aggIM.setMatrixAt(i,tmpM);});
+  sapIM.instanceMatrix.needsUpdate=true; aggIM.instanceMatrix.needsUpdate=true;
+}
+function placeAlgae(){
+  const cover=1-Math.exp(-P.age/3.5); const gl=Math.min(1,0.15+P.age/7);
+  let k=0; const v=new THREE.Vector3();
+  allSegs.forEach((s,i)=>{ const visible = P.p1 && (s.fi/fronds.length)<cover && s.i < 2+ (s.depth?gl*6:gl*12);
+    const sc=visible?1:0.0001; v.set(s.p.x*1,s.p.y*1,(s.p.z-T/2)*gl+T/2); tmpQ.setFromUnitVectors(new THREE.Vector3(0,0,1),s.d); tmpS.set(sc,sc,sc); tmpM.compose(v,tmpQ,tmpS); frondIM.setMatrixAt(i,tmpM); });
+  frondIM.instanceMatrix.needsUpdate=true;
+  tips.forEach((s,i)=>{ const visible=P.p1 && (s.fi/fronds.length)<cover && s.i < 2+(s.depth?gl*6:gl*12); const sc=visible?1:0.0001; v.set(s.p.x,s.p.y,(s.p.z-T/2)*gl+T/2); tmpM.compose(v,tmpQ.identity(),tmpS.set(sc,sc,sc)); tipIM.setMatrixAt(i,tmpM);}); tipIM.instanceMatrix.needsUpdate=true;
+  blades.forEach((b,i)=>{b.visible=P.p1 && i/blades.length<cover*0.9; b.scale.setScalar(0.4+0.6*gl);});
+  crust.visible=P.p1 && P.age>0.3; mCrust.color.copy(lin(0x7d4c63)).lerp(lin(0xcfc4ad),Math.max(0,1-P.age/3));
+  nbCav.material.color.copy(P.p1?new THREE.Color(0xffffff):lin(0xb0aaa0));
+}
+function layout(){
+  const e=P.ex;
+  subGroup.position.z=0.2*e;
+  reinfGroup.position.z=-0.16*e; reinfGroup.visible=true;
+  anchorGroup.position.z=-0.3*e;
+  placeParticles();
+  const xr=$('tXr').getAttribute('aria-pressed')==='true';
+  mConcrete.transparent=xr; mConcrete.opacity=xr?0.28:1; mConcrete.depthWrite=!xr; mConcrete.needsUpdate=true;
+  const cut=$('tCut').getAttribute('aria-pressed')==='true'; clip.constant=cut?0:10;
+  sapIM.visible=P.p2; aggIM.visible=P.p3;
+  $('pHwarn').style.display=(P.reinf==='steel'&&P.p3&&P.e3>0.3)?'block':'none';
+  dimGroup.visible=$('tDim').getAttribute('aria-pressed')==='true';
+}
+function heroPose(){
+  if(P.mode==='quay'){ const p=P.pull; hero.position.set(0.45*p*p, 0.05*p, 0.95*p); hero.rotation.set(-0.08*p, -0.55*p, 0.04*p); }
+  else { hero.position.set(0,0.0,0); hero.rotation.set(0,hero.rotation.y,0); }
+}
+function setMode(m){ P.mode=m; $('vQuay').setAttribute('aria-pressed',m==='quay'); $('vStudio').setAttribute('aria-pressed',m==='studio');
+  quay.visible=m==='quay'; studio.visible=m==='studio';
+  if(m==='quay'){ camera.position.set(1.75,0.55,2.75); controls.target.set(0.3,0.0,0.65); }
+  else { camera.position.set(0.95,0.45,1.25); controls.target.set(0,0,0); hero.rotation.set(0,-0.5,0); }
+  controls.update(); heroPose(); }
+
+// ================================================================ UI
+const S={al:['vAl',v=>fmt(+v,2)+' g C m⁻² d⁻¹'],ep:['vEp',v=>fmt(+v,2)],bp:['vBp',v=>fmt(+v,2)],ga:['vGa',v=>v+' g CaCO₃ m⁻² yr⁻¹'],pi:['vPi',v=>fmt(+v,2)],ph:['vPh',v=>fmt(+v,2)],tc:['vTc',v=>fmt(+v,1)+' yr'],ci:['vCi',v=>v+' kg CO₂ m⁻³'],
+  e2:['vE2',v=>fmt(+v,2)],e3:['vE3',v=>fmt(+v,2)],L0:['vL0',v=>v+' yr'],wl:['vWl',v=>fmt(+v,0)+' m'],wh:['vWh',v=>fmt(+v,1)+' m'],us:['vUs',v=>fmt(v*100,0)+'%'],
+  pc:['vPc',v=>'€'+v+' m⁻³'],cc:['vCc',v=>v+' kg m⁻³'],sd:['vSd',v=>fmt(+v,2)+'%'],ps:['vPs',v=>'€'+fmt(+v,1)+' kg⁻¹'],pr:['vPr',v=>'€'+fmt(+v,1)+' kg⁻¹ (steel)'],pco:['vPco',v=>'€'+fmt(+v,1)],
+  pmo:['vPm',v=>'€'+fmt(+v,1)],pa:['vPa',v=>'€'+fmt(+v,1)],pin:['vPi2',v=>'€'+v],mo:['vMo',v=>v],cy:['vCy',v=>v],cp:['vCp',v=>'€'+v+' t⁻¹'],ma:['vMa',v=>'€'+fmt(+v,1)+' yr⁻¹'],rr:['vR',v=>fmt(v*100,1)+'%'],
+  pull:['vPull',v=>Math.round(v*100)+'%'],ex:['vEx',v=>Math.round(v*100)+'%'],age:['vAge',v=>fmt(+v,1)+' yr']};
+const idMap={pmo:'pmo',pin:'pin'};
+Object.entries(S).forEach(([k,[vid,f]])=>{const el=$(idMap[k]||k); const upd=()=>{P[k]=parseFloat(el.value); $(vid).textContent=f(el.value); onChange(k);}; el.addEventListener('input',upd); P[k]=parseFloat(el.value); $(vid).textContent=f(el.value);});
+function tg(id,fn){const b=$(id); b.addEventListener('click',()=>{const on=b.getAttribute('aria-pressed')!=='true'; b.setAttribute('aria-pressed',on); fn&&fn(on); onChange(id);});}
+['tCut','tXr','tDim','tCall','tCO2','tSpin'].forEach(id=>tg(id));
+tg('p1',v=>P.p1=v); tg('p2',v=>P.p2=v); tg('p3',v=>P.p3=v);
+function setReinf(r){P.reinf=r; [['rSteel','steel'],['rGfrp','gfrp'],['rNone','none']].forEach(([id,v])=>$(id).setAttribute('aria-pressed',v===r)); buildReinf(); onChange('reinf');}
+$('rSteel').onclick=()=>setReinf('steel'); $('rGfrp').onclick=()=>setReinf('gfrp'); $('rNone').onclick=()=>setReinf('none');
+$('vQuay').onclick=()=>setMode('quay'); $('vStudio').onclick=()=>setMode('studio');
+$('menuBtn').onclick=()=>$('side').classList.toggle('open');
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t)); document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===t.dataset.p));});
+
+function sheet(id,rows){ $(id).innerHTML=rows.map(([a,b])=>'<span>'+a+'</span><span>'+b+'</span>').join(''); }
+function onChange(k){
+  if(['ex','tXr','tCut','tDim','p2','p3','e3','reinf'].includes(k)) layout();
+  if(['age','p1'].includes(k)) placeAlgae();
+  if(k==='pull') heroPose();
+  compute();
+}
+function compute(){
+  const F=fluxF(), L=life(), E=embodied(), be=breakEven(), age=P.age;
+  const absorbed=P.pi*F*Gc(Math.min(age,L));
+  // module counts
+  const area=P.wl*P.wh*P.us, N=Math.floor(area/A_TILE);
+  const u=unitCost(), capex=N*u.total;
+  const prodDays=Math.ceil(N/(P.mo*P.cy)), weeks=prodDays/5;
+  const lc=lcor(u.total), nv=npvUnit(u.total);
+  // HUD
+  $('hAbs').textContent=fmt(absorbed,2)+' kg CO₂'; $('hNet').textContent=(cnet(age)>=0?'+':'')+fmt(cnet(age),2)+' kg';
+  $('hNet').style.color=cnet(age)>=0?'#7fdcae':'#ff9d88';
+  $('hN').textContent=N.toLocaleString('en-GB'); $('hCost').textContent=eur(capex);
+  // carbon pane
+  $('cF').textContent=fmt(F,3); $('cBe').textContent=Number.isFinite(be)?fmt(be,0):'never'; $('cBe').style.color=(Number.isFinite(be)&&be<=L)?'var(--algae)':'var(--emit)';
+  sheet('carbSheet',[['Concrete without pillar 3',fmt(P.ci*V,2)+' kg CO₂'],['Embodied after pillar 3, E(1 − η₃)',fmt(E,2)+' kg CO₂'],['Service life L',fmt(L,0)+' yr'],
+    ['Absorbed by year '+fmt(age,1),fmt(absorbed,2)+' kg CO₂'],['Net over the full life',fmt(cnet(L),2)+' kg CO₂'],['Colonised area S',fmt(Scol(),3)+' m²'],['Whole project, per year at maturity',fmt(N*P.pi*F/1000,2)+' t CO₂'],
+    ['Whole project, net over life',fmt(N*cnet(L)/1000,1)+' t CO₂']]);
+  // cost pane
+  $('kN').textContent=N.toLocaleString('en-GB'); $('kArea').textContent=fmt(area,0)+' m² of tidal face'; $('kCost').textContent=eur(capex); $('kUnit').textContent='€'+fmt(u.total,2)+' per block';
+  const cementT=N*V*P.cc/1000, sapKg=P.p2?N*V*P.cc*P.sd/100:0, reinfT=N*reinfMass()/1000;
+  sheet('costSheet',[['Concrete',eur(u.conc)+' / block'],['SAP',eur(u.sap)+' / block'],['Reinforcement and anchors',eur(u.reinf+u.anchors)+' / block'],['CO₂ curing',eur(u.curing)+' / block'],
+    ['Mould share',eur(u.mould)+' / block'],['Algal seeding',eur(u.seed)+' / block'],['Installation',eur(u.inst)+' / block'],
+    ['Concrete volume',fmt(N*V,0)+' m³'],['Cement',fmt(cementT,1)+' t'],['SAP',fmt(sapKg,0)+' kg'],[P.reinf==='none'?'Fibres':'Reinforcement',P.reinf==='none'?fmt(N*fibreMass()/1000,2)+' t':fmt(reinfT,2)+' t'],
+    ['Production time',prodDays.toLocaleString('en-GB')+' days ('+fmt(weeks,0)+' weeks)'],
+    ['Levelised cost of removal',lc===null?'undefined: net emitter':'€'+fmt(lc,0)+' t⁻¹'],['NPV per block at the carbon price',eur(nv)],['NPV of the project',eur(nv*N)]]);
+  // geometry pane
+  sheet('geoSheet',[['Flat to flat / corner to corner','500 / 577 mm'],['Thickness / cavity','200 mm / Ø 300 × 100 mm'],['Hexagon face / cavity area',fmt(A_HEX,3)+' / '+fmt(A_CAV,3)+' m²'],['Concrete volume',fmt(V*1000,1)+' L'],
+    ['Mass',fmt(MASS,1)+' kg'],[P.reinf==='none'?'Fibres':'Bars ('+bars.length+' × Ø8)', P.reinf==='none'? fmt(fibreMass(),2)+' kg' : fmt(BAR_LEN,2)+' m · '+fmt(reinfMass(),2)+' kg'],['Cover to reinforcement','40 mm'],
+    ['Anchors','2 × M16 stainless, 300 mm'],['SAP in this block',P.p2?fmt(V*P.cc*P.sd/100*1000,0)+' g':'none'],['Blocks per 100 m of quay',fmt(Math.floor(100*P.wh*P.us/A_TILE),0)]]);
+}
+
+// ================================================================ projection of labels
+const pv=new THREE.Vector3();
+function project(v,el){ pv.copy(v).applyMatrix4(hero.matrixWorld).project(camera); if(pv.z>1){el.style.display='none';return;} const w=stage.clientWidth,h=stage.clientHeight; el.style.display='block'; el.style.left=((pv.x+1)/2*w)+'px'; el.style.top=((1-pv.y)/2*h)+'px'; }
+function updateLabels(){
+  const showD=$('tDim').getAttribute('aria-pressed')==='true', showC=$('tCall').getAttribute('aria-pressed')==='true';
+  dims.forEach((d,i)=>{ if(!showD){dimEls[i].style.display='none';return;} project(d.at,dimEls[i]); });
+  callouts.forEach((c,i)=>{ const relevant = (i<2&&P.p1) || (i===2&&P.p2&&(P.ex>0.15||isSeeThrough())) || (i===3&&P.p3&&(P.ex>0.15||isSeeThrough())) || (i===4&&P.reinf!=='none'&&(P.ex>0.15||isSeeThrough())) || (i===5&&(P.ex>0.15||P.mode==='studio'));
+    if(!showC||!relevant){callEls[i].style.display='none';return;}
+    const v=c.obj().clone(); if(i<2) v.z+=subGroup.position.z; if(i===4) v.z+=reinfGroup.position.z; if(i===5) v.z+=anchorGroup.position.z;
+    project(v,callEls[i]); });
+}
+const isSeeThrough=()=>$('tXr').getAttribute('aria-pressed')==='true'||$('tCut').getAttribute('aria-pressed')==='true';
+
+// ================================================================ loop
+let clock=0, last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now; clock+=dt;
+  if(!reduced){
+    waterNormal.offset.set(clock*0.012,clock*0.008);
+    blades.forEach(b=>{b.rotation.x=b.userData.base.x+0.08*Math.sin(clock*1.4+b.userData.ph); b.rotation.y=0.06*Math.sin(clock*1.1+b.userData.ph);});
+    water.position.y=WATER_Y+0.06*Math.sin(clock*0.4);
+  }
+  if($('tSpin').getAttribute('aria-pressed')==='true'){ if(P.mode==='studio') hero.rotation.y+=dt*0.35; else { controls.autoRotate=true; controls.autoRotateSpeed=0.8; } } else controls.autoRotate=false;
+  // CO2 stream: rate proportional to flux
+  const showCO2=$('tCO2').getAttribute('aria-pressed')==='true' && (P.p1||P.p3);
+  co2IM.visible=showCO2;
+  if(showCO2){ const rate=0.25+Math.min(2,fluxF()/0.136)*0.35;
+    co2.forEach((p,i)=>{ p.ph=(p.ph+dt*rate*0.5)%1; const t=p.ph; let x,y,z;
+      if(p.toAlgae&&P.p1){ x=p.x*(1-t*0.6); y=p.y*(1-t*0.6); z=T/2+0.45*(1-t)+0.03*t+subGroup.position.z; }
+      else { const a=i*2.39; const rr=0.17+0.05*Math.sin(a*3); x=rr*Math.cos(a); y=rr*Math.sin(a); z=T/2+0.35*(1-t)+0.002; }
+      const s=t>0.92?(1-t)/0.08:1; tmpM.compose(tmpV.set(x,y,z),tmpQ.identity(),tmpS.set(s,s,s)); co2IM.setMatrixAt(i,tmpM); });
+    co2IM.instanceMatrix.needsUpdate=true; }
+  controls.update(); renderer.render(scene,camera); updateLabels();
+  requestAnimationFrame(frame);
+}
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize);
+
+buildReinf(); layout(); placeAlgae(); setMode('quay'); resize(); compute();
+$('loader').remove();
+requestAnimationFrame(t=>{last=t;frame(t);});
+})();
+</script>
+</body>
+</html>
